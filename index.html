@@ -396,7 +396,7 @@ function renderHome() {
 
     <div class="sec-title"><h2>지금 살펴볼 매물</h2><span>네이버 호가 신호 ${sig.length}곳</span></div>
     <div class="card list">${sig.length ? sig.slice(0, OPEN.sig ? 999 : TOP_N).map(({ c, i }) => `
-      <button class="item" data-cx="${i}">
+      <button class="item" data-cx="${i}"${c.nv.barea ? ` data-area="${c.nv.barea}"` : ""}>
         ${badge(c.nv.grade)}
         <span class="main"><span class="t">${cxName(i)}</span>
           <span class="s">${esc(c.d)} · ${esc(c.nv.sig)}</span></span>
@@ -408,7 +408,7 @@ function renderHome() {
 
     <div class="sec-title"><h2>최근 60일 급매 거래</h2><span>실제로 팔린 가격</span></div>
     <div class="card list">${D.bargains.length ? D.bargains.slice(0, OPEN.bar ? 999 : TOP_N).map(b => `
-      <button class="item" data-cx="${b.c}">
+      <button class="item" data-cx="${b.c}" data-area="${b.area}">
         ${badge(b.g)}
         <span class="main"><span class="t">${esc(D.complexes[b.c]?.n ?? "")}</span>
           <span class="s">${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${b.dt.slice(5).replace("-", "/")}${b.note ? " · " + esc(b.note) : ""}</span></span>
@@ -565,13 +565,19 @@ function renderCxDetail() {
   const gs = groups(ci);
   const live = gs.filter(g => g.rows[0].dt > new Date(TODAY.getFullYear() - 2, TODAY.getMonth(), 1));
   const shown = live.length ? live : gs;
-  if (CX.area == null || !shown.some(g => Math.abs(g.area - CX.area) < 0.01)) CX.area = (shown.find(g => g.base) || shown[0]).area;
+  if (CX.area != null && !shown.some(g => Math.abs(g.area - CX.area) < 0.01)) {   // 거래 면적 → 가장 가까운 평형
+    const near = shown.reduce((x, y) => Math.abs(y.area - CX.area) < Math.abs(x.area - CX.area) ? y : x);
+    CX.area = Math.abs(near.area - CX.area) <= 3 ? near.area : null;
+  }
+  if (CX.area == null) CX.area = [...shown].sort((x, y) => y.comps.length - x.comps.length)[0].area;   // 거래 가장 많은 평형
   const g = shown.find(x => Math.abs(x.area - CX.area) < 0.01);
   const prev = (() => {   // 그 전 6개월 중앙값 (6~12개월 전)
     const a = new Date(TODAY); a.setDate(a.getDate() - 360); const b = new Date(TODAY); b.setDate(b.getDate() - 180);
-    const w = g.rows.filter(r => r.dt > a && r.dt <= b); return w.length >= 3 ? median(w.map(r => r.p)) : null;
+    const w = g.rows.filter(r => r.dt > a && r.dt <= b); return { n: w.length, med: w.length ? median(w.map(r => r.p)) : null };
   })();
-  const chg = g.raw && prev && g.months === 6 ? g.raw / prev - 1 : null;
+  const MIN_CHG = 5;   // 양쪽 기간 모두 5건 이상일 때만 비교 (적으면 한두 건에 크게 흔들림)
+  const chgOk = g.months === 6 && g.comps.length >= MIN_CHG && prev.n >= MIN_CHG;
+  const chg = chgOk ? g.raw / prev.med - 1 : null;
   $("#v-cx").innerHTML = `
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px">
@@ -586,11 +592,12 @@ function renderCxDetail() {
     <div class="card">
       <div class="stat3">
         <div><div class="l">기준가</div><div class="v num">${eok2(g.base)}</div></div>
-        <div><div class="l">6개월 전 대비</div><div class="v num ${chg > 0 ? "up" : chg < 0 ? "down" : ""}">${pct(chg, true)}</div></div>
+        <div><div class="l">중앙가 6개월 변화</div><div class="v num ${chg > 0 ? "up" : chg < 0 ? "down" : ""}">${chgOk ? pct(chg, true) : "거래 적음"}</div>
+          <div class="l">${g.months === 6 ? `${prev.n}건 → ${g.comps.length}건` : "최근 6개월 3건 미만"}</div></div>
         <div><div class="l">최근 ${g.months || 12}개월 거래</div><div class="v num">${g.comps.length}건</div></div>
       </div>
       <div class="chart" style="margin-top:14px;height:220px"><canvas id="cTr" role="img" aria-label="이 평형의 최근 3년 실거래 가격"></canvas></div>
-      <div class="note">점 = 실거래 (직거래는 흐리게) · 점선 = 현재 기준가(시점 보정)</div>
+      <div class="note">점 = 실거래 (직거래는 흐리게) · 점선 = 현재 기준가(시점 보정)<br>중앙가 6개월 변화 = 최근 6개월 거래 중앙가와 그 전 6개월(6~12개월 전) 중앙가 비교. 양쪽 모두 ${MIN_CHG}건 이상일 때만 표시</div>
       ${g.base ? `<div class="basis">${baseNote(g)}</div>` : ""}
     </div>
     <div class="card"><table class="tr">${g.rows.slice(0, 12).map(tradeRow).join("")}</table></div>
@@ -637,7 +644,7 @@ function renderFav() {
 function bindItems(root) {
   document.querySelectorAll(root + " [data-cx]").forEach(el => el.onclick = () => {
     const i = +el.dataset.cx; if (Number.isNaN(i)) return;
-    CX.ci = i; CX.area = null; go("cx", true);
+    CX.ci = i; CX.area = el.dataset.area ? +el.dataset.area : null; go("cx", true);
   });
 }
 let TAB = "home";
