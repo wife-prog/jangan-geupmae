@@ -559,7 +559,7 @@ function renderResult() {
         <div><div class="l">최근 ${g.months}개월 범위</div><div class="v num">${(cmin / 10000).toFixed(1)}~${(cmax / 10000).toFixed(1)}억</div></div>
         <div><div class="l">비교 거래</div><div class="v num">${g.comps.length}건</div></div>
       </div>
-      <div class="basis"><b>기준가 근거</b> · 최근 ${g.months}개월 같은 평형 ${g.comps.length}건을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값<br>${baseNote(g)}${fl != null && fl <= D.rules.low ? `<br><b>참고</b> · ${D.rules.low}층 이하 저층은 원래 시세보다 싸게 거래되는 편이에요` : ""}</div>
+      <div class="basis"><b>기준가 근거</b> · 최근 ${g.months}개월 같은 평형 ${g.comps.length}건을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값<br>${baseNote(g)}${fl != null && fl <= (D.complexes[ci].low ?? D.rules.low) ? `<br><b>참고</b> · 이 단지는 ${D.complexes[ci].low ?? D.rules.low}층 이하가 저층이에요. 저층은 원래 시세보다 싸게 거래되는 편이에요` : ""}</div>
     </div>` + recent;
 }
 
