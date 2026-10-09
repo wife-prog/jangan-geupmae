@@ -243,14 +243,28 @@ function groups(ci) {
   });
 }
 function median(a) { const s = [...a].sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
+// 장안구 월별 가격지수 (기준월=1). 기준월 이후는 1, 자료 이전은 첫 달 값
+function idxOf(ym) {
+  if (D.index[ym] != null) return D.index[ym];
+  const ks = Object.keys(D.index).sort();
+  return ym < ks[0] ? D.index[ks[0]] : 1;
+}
+const ymOf = n => `${String(n).slice(0, 4)}-${String(n).slice(4, 6)}`;
+// 기준가 = 최근 6개월(부족하면 12개월) 거래를 오늘 시세로 환산(시점 보정)한 중앙값
 function base(rows) {
   for (const m of D.rules.months) {
     const from = new Date(TODAY); from.setDate(from.getDate() - 30 * m);
     const w = rows.filter(r => r.dt > from);
-    if (w.length >= D.rules.min) return { base: median(w.map(r => r.p)), months: m, comps: w };
+    if (w.length >= D.rules.min) {
+      const f2 = new Date(TODAY); f2.setDate(f2.getDate() - 60);
+      const r2 = rows.filter(r => r.dt > f2);
+      return { base: median(w.map(r => r.p / idxOf(ymOf(r.d)))), raw: median(w.map(r => r.p)), months: m, comps: w,
+               recent2: r2.length >= 3 ? median(r2.map(r => r.p)) : null };
+    }
   }
-  return { base: null, months: null, comps: [] };
+  return { base: null, raw: null, months: null, comps: [], recent2: null };
 }
+const baseNote = g => `보정 전 ${eok2(g.raw)}${g.recent2 ? ` · 최근 2개월 실거래 중앙 ${eok2(g.recent2)}` : ""}`;
 function gradeOf(disc) { for (const [g, th] of D.rules.grades) if (disc >= th) return g; return ""; }
 function parsePrice(t) {
   t = String(t).replace(/\s/g, "");
@@ -418,7 +432,7 @@ function renderResult() {
     <div class="card"><table class="tr">${g.rows.slice(0, 6).map(tradeRow).join("")}</table></div>
     <div class="card">${nvBox(ci)}</div>`;
   if (!price) { el.innerHTML = `<div class="card verdict"><div class="why">가격을 넣으면 바로 판정해요.</div>
-      ${g.base ? `<div class="msg num">기준가 ${eok2(g.base)}</div><div class="why">최근 ${g.months}개월 ${g.comps.length}건 중앙값</div>` : ""}</div>` + recent; return; }
+      ${g.base ? `<div class="msg num">기준가 ${eok2(g.base)}</div><div class="why">최근 ${g.months}개월 ${g.comps.length}건 · 시점 보정</div><div class="note">${baseNote(g)}</div>` : ""}</div>` + recent; return; }
   if (!g.base) { el.innerHTML = `<div class="card verdict"><div class="big bN">?</div><div class="msg">기준가를 정할 수 없어요</div>
       <div class="why">이 평형은 최근 12개월 거래가 ${D.rules.min}건이 안 돼요.</div></div>` + recent; return; }
   const diff = price / g.base - 1, grade = gradeOf(-diff);
@@ -442,6 +456,7 @@ function renderResult() {
         <div><div class="l">최근 ${g.months}개월 범위</div><div class="v num">${(cmin / 10000).toFixed(1)}~${(cmax / 10000).toFixed(1)}억</div></div>
         <div><div class="l">비교 거래</div><div class="v num">${g.comps.length}건</div></div>
       </div>
+      <div class="note" style="margin-top:14px">기준가는 최근 ${g.months}개월 거래를 장안구 시세 흐름으로 오늘 가격에 맞춰 환산한 값이에요.<br>${baseNote(g)}</div>
       ${fl != null && fl <= D.rules.low ? `<div class="note" style="margin-top:14px">${D.rules.low}층 이하 저층은 원래 시세보다 싸게 거래되는 편이에요.</div>` : ""}
     </div>` + recent;
 }
@@ -476,7 +491,7 @@ function renderCxDetail() {
     const a = new Date(TODAY); a.setDate(a.getDate() - 360); const b = new Date(TODAY); b.setDate(b.getDate() - 180);
     const w = g.rows.filter(r => r.dt > a && r.dt <= b); return w.length >= 3 ? median(w.map(r => r.p)) : null;
   })();
-  const chg = g.base && prev && g.months === 6 ? g.base / prev - 1 : null;
+  const chg = g.raw && prev && g.months === 6 ? g.raw / prev - 1 : null;
   $("#v-cx").innerHTML = `
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px">
@@ -495,7 +510,7 @@ function renderCxDetail() {
         <div><div class="l">최근 ${g.months || 12}개월 거래</div><div class="v num">${g.comps.length}건</div></div>
       </div>
       <div class="chart" style="margin-top:14px;height:220px"><canvas id="cTr"></canvas></div>
-      <div class="note">점 = 실거래 (직거래는 흐리게) · 선 = 현재 기준가</div>
+      <div class="note">점 = 실거래 (직거래는 흐리게) · 선 = 현재 기준가(시점 보정)<br>${g.base ? baseNote(g) : ""}</div>
     </div>
     <div class="card"><table class="tr">${g.rows.slice(0, 12).map(tradeRow).join("")}</table></div>
     <button class="btn solid" id="toJudge">이 단지 매물 판정하기</button>`;
