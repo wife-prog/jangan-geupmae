@@ -1,7 +1,7 @@
 {
-  "name": "장안구 급매",
-  "short_name": "장안구 급매",
-  "description": "수원 장안구 아파트 실거래·호가로 급매 찾기",
+  "name": "수원 급매",
+  "short_name": "수원 급매",
+  "description": "수원시 아파트 실거래·호가로 급매 찾기",
   "start_url": "./#home",
   "scope": "./",
   "display": "standalone",

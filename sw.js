@@ -1,5 +1,5 @@
 // 앱 화면은 캐시해서 빨리 열고, 데이터(app.json)는 항상 새로 받아오되 오프라인이면 캐시를 씀
-const CACHE = "jangan-v2";
+const CACHE = "jangan-v3";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icons/icon-192.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener("activate", e => {

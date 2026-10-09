@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>장안구 급매</title>
-<meta name="description" content="수원 장안구 아파트 실거래·호가로 급매를 찾는 앱">
+<title>수원 급매</title>
+<meta name="description" content="수원시 아파트 실거래·호가로 급매를 찾는 앱">
 <meta name="theme-color" content="#F5F7F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0F1214" media="(prefers-color-scheme: dark)">
 <meta name="robots" content="noindex">
@@ -12,7 +12,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="장안구 급매">
+<meta name="apple-mobile-web-app-title" content="수원 급매">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -220,13 +220,17 @@ ul.ins li { margin: 5px 0; }
 .more { width: 100%; min-height: 48px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--brand);
   font-weight: 700; font-size: 14.5px; margin-top: 4px; border-radius: 0 0 12px 12px; }
 .more:active { background: var(--soft); }
+.regions { display: flex; gap: 6px; overflow-x: auto; margin: 4px -16px 12px; padding: 2px 16px; scrollbar-width: none; }
+.regions::-webkit-scrollbar { display: none; }
+.regions .chip { min-height: 40px; padding: 0 14px; font-size: 14.5px; flex-shrink: 0; }
+.gtag { font-size: 11.5px; font-weight: 700; color: var(--brand); background: var(--brand-soft); border-radius: 6px; padding: 1px 6px; margin-right: 4px; }
 </style>
 </head>
 <body>
 <header class="top" id="top">
   <div class="wrap">
     <button class="back" id="backBtn" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-    <h1><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M12 9v9M8.5 14.5L12 18l3.5-3.5"/></svg></span><span id="title">장안구 급매</span></h1>
+    <h1><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M12 9v9M8.5 14.5L12 18l3.5-3.5"/></svg></span><span id="title">수원 급매</span></h1>
     <span class="sub" id="updated"></span>
   </div>
 </header>
@@ -270,6 +274,11 @@ const ICON = {
 };
 
 let D, TODAY, BY;            // 데이터, 기준일, 단지별 거래
+const ALL = "수원시";
+let REG = ALL;               // 홈·단지 목록에서 보는 지역 (수원시 전체 또는 구)
+const inReg = i => REG === ALL || D.complexes[i].g === REG;
+const short = g => g.replace(/구$/, "");
+const gtag = i => REG === ALL ? `<span class="gtag">${short(D.complexes[i].g)}</span>` : "";
 const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -291,26 +300,27 @@ function groups(ci) {
   return out.map(as => {
     const rs = rows.filter(r => as.includes(r.a)).sort((x, y) => y.d - x.d);
     const ar = median(rs.map(r => r.a));
-    return { area: ar, rows: rs, ...base(rs) };
+    return { area: ar, rows: rs, ...base(rs, D.complexes[ci].g) };
   });
 }
 function median(a) { const s = [...a].sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
-// 장안구 월별 가격지수 (기준월=1). 기준월 이후는 1, 자료 이전은 첫 달 값
-function idxOf(ym) {
-  if (D.index[ym] != null) return D.index[ym];
-  const ks = Object.keys(D.index).sort();
-  return ym < ks[0] ? D.index[ks[0]] : 1;
+// 구별 월별 가격지수 (기준월=1). 기준월 이후는 1, 자료 이전은 첫 달 값
+function idxOf(gu, ym) {
+  const ix = D.index[gu] || D.index[ALL];
+  if (ix[ym] != null) return ix[ym];
+  const ks = Object.keys(ix).sort();
+  return ym < ks[0] ? ix[ks[0]] : 1;
 }
 const ymOf = n => `${String(n).slice(0, 4)}-${String(n).slice(4, 6)}`;
 // 기준가 = 최근 6개월(부족하면 12개월) 거래를 오늘 시세로 환산(시점 보정)한 중앙값
-function base(rows) {
+function base(rows, gu) {
   for (const m of D.rules.months) {
     const from = new Date(TODAY); from.setDate(from.getDate() - 30 * m);
     const w = rows.filter(r => r.dt > from);
     if (w.length >= D.rules.min) {
       const f2 = new Date(TODAY); f2.setDate(f2.getDate() - 60);
       const r2 = rows.filter(r => r.dt > f2);
-      return { base: median(w.map(r => r.p / idxOf(ymOf(r.d)))), raw: median(w.map(r => r.p)), months: m, comps: w,
+      return { base: median(w.map(r => r.p / idxOf(gu, ymOf(r.d)))), raw: median(w.map(r => r.p)), months: m, comps: w,
                recent2: r2.length >= 3 ? median(r2.map(r => r.p)) : null };
     }
   }
@@ -339,9 +349,9 @@ function searchCx(q) {
       else if (n.includes(nq)) s = Math.max(s, 60);
       else if (nq.includes(n) && n.length >= 2) s = Math.max(s, 40);
     }
-    if (c.d.startsWith(q.trim())) s = Math.max(s, 30);
+    if (c.d.startsWith(q.trim()) || c.g.startsWith(q.trim())) s = Math.max(s, 30);
     return { i, s: s + Math.min(c.cnt, 300) / 300 };
-  }).filter(x => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 12).map(x => x.i);
+  }).filter(x => x.s >= 1).sort((a, b) => b.s - a.s).slice(0, 30).map(x => x.i);
 }
 
 // ---------------- 공용 조각 ----------------
@@ -366,8 +376,18 @@ function tradeRow(r) {
 }
 
 // ---------------- 화면: 홈 ----------------
-function indexSeries() {   // 장안구 가격지수 (기준월 = 100), 최근 24개월
-  return Object.keys(D.index).sort().filter(m => m <= D.ref).slice(-24).map(m => ({ m, v: D.index[m] * 100 }));
+function indexSeries() {   // 선택한 지역 가격지수 (기준월 = 100), 최근 24개월
+  const ix = D.index[REG], ref = D.ref[REG];
+  return Object.keys(ix).sort().filter(m => m <= ref).slice(-24).map(m => ({ m, v: ix[m] * 100 }));
+}
+function regionChips() {
+  return `<div class="regions" role="group" aria-label="지역 선택">${D.regions.map(r =>
+    `<button class="chip" data-reg="${r}" aria-pressed="${r === REG}">${r === ALL ? "수원 전체" : r}</button>`).join("")}</div>`;
+}
+function bindRegions(root, rerender) {
+  document.querySelectorAll(root + " [data-reg]").forEach(b => b.onclick = () => {
+    REG = b.dataset.reg; store.set("region", REG); OPEN.sig = OPEN.bar = false; rerender();
+  });
 }
 const OPEN = { sig: false, bar: false };   // 홈 목록 펼침 상태
 const TOP_N = 5;
@@ -375,22 +395,23 @@ function moreBtn(key, total) {
   return total > TOP_N ? `<button class="more" data-more="${key}" aria-expanded="${OPEN[key]}">${OPEN[key] ? "접기" : `전체 ${total}건 보기`}</button>` : "";
 }
 function renderHome() {
-  const k = D.kpi;
-  const sig = D.complexes.map((c, i) => ({ c, i })).filter(x => x.c.nv && x.c.nv.sig)
+  const k = D.kpi[REG];
+  const bars = D.bargains.filter(b => inReg(b.c));
+  const sig = D.complexes.map((c, i) => ({ c, i })).filter(x => inReg(x.i) && x.c.nv && x.c.nv.sig && x.c.nv.sig !== "연결확인")
     .filter((x, j, arr) => arr.findIndex(y => y.c.nv.no === x.c.nv.no) === j)
     .sort((a, b) => (a.c.nv.gap ?? 0) - (b.c.nv.gap ?? 0));
   const tot = k.A + k.B + k.C;
   const idx = indexSeries(), y1 = idx.length > 12 ? idx[idx.length - 1].v / idx[idx.length - 13].v - 1 : null;
-  $("#v-home").innerHTML = `
+  $("#v-home").innerHTML = regionChips() + `
     <div class="card hero">
-      <div class="l">장안구 아파트 시세 · 최근 3개월</div>
+      <div class="l">${REG === ALL ? "수원시" : REG} 아파트 시세 · 최근 3개월</div>
       <div class="v num">${pct(k.lfl, true)}</div>
       <div class="d">같은 단지·같은 평형끼리 비교${y1 != null ? ` · 1년 ${pct(y1, true)}` : ""}</div>
-      <div class="spark"><canvas id="cIdx" role="img" aria-label="장안구 가격지수 최근 2년 추이"></canvas></div>
+      <div class="spark"><canvas id="cIdx" role="img" aria-label="가격지수 최근 2년 추이"></canvas></div>
     </div>
     <div class="kpis">
       <div class="kpi"><div class="l">3개월 거래</div><div class="v num">${k.r3.toLocaleString()}건</div><div class="d">직전 ${k.p3.toLocaleString()}건</div></div>
-      <div class="kpi"><div class="l">60일 급매</div><div class="v num">${tot}건</div><div class="d">A ${k.A} · B ${k.B} · C ${k.C}</div></div>
+      <div class="kpi"><div class="l">60일 급매</div><div class="v num">${tot}건</div><div class="d">A${k.A} · B${k.B} · C${k.C}</div></div>
       <div class="kpi"><div class="l">네이버 매물</div><div class="v num">${k.listings != null ? k.listings.toLocaleString() + "건" : "-"}</div><div class="d">매매 합계</div></div>
     </div>
 
@@ -398,7 +419,7 @@ function renderHome() {
     <div class="card list">${sig.length ? sig.slice(0, OPEN.sig ? 999 : TOP_N).map(({ c, i }) => `
       <button class="item" data-cx="${i}"${c.nv.barea ? ` data-area="${c.nv.barea}"` : ""}>
         ${badge(c.nv.grade)}
-        <span class="main"><span class="t">${cxName(i)}</span>
+        <span class="main"><span class="t">${gtag(i)}${cxName(i)}</span>
           <span class="s">${esc(c.d)} · ${esc(c.nv.sig)}</span></span>
         <span class="r"><span class="p num">${eok2(c.nv.min)}</span>
           <span class="s ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? "기준가 " + pct(c.nv.gap, true) : "매물 " + c.nv.cnt + "건"}</span></span>
@@ -407,22 +428,23 @@ function renderHome() {
     <div class="note">최저호가가 그 단지 가장 작은 평형의 실거래 기준가보다 7% 이상 낮으면 표시해요. 호가는 실제 거래가가 아니니 매물을 꼭 확인하세요.</div>
 
     <div class="sec-title"><h2>최근 60일 급매 거래</h2><span>실제로 팔린 가격</span></div>
-    <div class="card list">${D.bargains.length ? D.bargains.slice(0, OPEN.bar ? 999 : TOP_N).map(b => `
+    <div class="card list">${bars.length ? bars.slice(0, OPEN.bar ? 999 : TOP_N).map(b => `
       <button class="item" data-cx="${b.c}" data-area="${b.area}">
         ${badge(b.g)}
-        <span class="main"><span class="t">${esc(D.complexes[b.c]?.n ?? "")}</span>
+        <span class="main"><span class="t">${gtag(b.c)}${esc(D.complexes[b.c]?.n ?? "")}</span>
           <span class="s">${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${b.dt.slice(5).replace("-", "/")}${b.note ? " · " + esc(b.note) : ""}</span></span>
         <span class="r"><span class="p num">${eok2(b.p)}</span><span class="s down num">${pct(-b.disc)}</span></span>
-      </button>`).join("") + moreBtn("bar", D.bargains.length) : empty("최근 60일 급매 거래가 없어요.")}</div>
+      </button>`).join("") + moreBtn("bar", bars.length) : empty("최근 60일 급매 거래가 없어요.")}</div>
 
     <div class="sec-title"><h2>월별 거래량</h2><span>해제 거래 제외</span></div>
-    <div class="card"><div class="chart"><canvas id="cVol" role="img" aria-label="장안구 월별 아파트 거래량"></canvas></div>
+    <div class="card"><div class="chart"><canvas id="cVol" role="img" aria-label="월별 아파트 거래량"></canvas></div>
       <div class="note">최근 1~2개월은 신고가 덜 들어와 실제보다 적게 보여요.</div></div>
 
     <div class="sec-title"><h2>오늘의 요약</h2></div>
-    <div class="card"><ul class="ins">${D.insights.filter(s => !s.startsWith("  ·")).map(s => `<li>${esc(s)}</li>`).join("")}</ul></div>
+    <div class="card"><ul class="ins">${D.insights[REG].filter(s => !s.startsWith("  ·")).map(s => `<li>${esc(s)}</li>`).join("")}</ul></div>
     <div class="note">자료: 국토교통부 실거래가, 네이버 부동산 · ${esc(D.updated)} 기준</div>`;
   bindItems("#v-home");
+  bindRegions("#v-home", renderHome);
   document.querySelectorAll("#v-home [data-more]").forEach(b => b.onclick = () => {
     const y = scrollY; OPEN[b.dataset.more] = !OPEN[b.dataset.more]; renderHome(); scrollTo(0, y);
   });
@@ -439,7 +461,7 @@ function chartBase(fmt) {
 function drawHomeCharts() {
   if (!window.Chart || !$("#cVol")) return;
   ["vol", "idx"].forEach(k => charts[k]?.destroy());
-  const m = D.monthly, labels = m.map(r => r.m.slice(2).replace("-", "."));
+  const m = D.monthly[REG], labels = m.map(r => r.m.slice(2).replace("-", "."));
   const c = css("--brand"), on = css("--on-brand");
   charts.vol = new Chart($("#cVol"), { type: "bar", data: { labels, datasets: [{ data: m.map(r => r.cnt), backgroundColor: c, borderRadius: 4, maxBarThickness: 14 }] }, options: chartBase(v => v + "건") });
   const idx = indexSeries();
@@ -469,7 +491,7 @@ function renderJudge() {
   const inp = $("#jq");
   inp.oninput = () => {
     const r = searchCx(inp.value);
-    $("#jsugg").innerHTML = r.map(i => `<button class="item" data-pick="${i}"><span class="main"><span class="t">${esc(D.complexes[i].n)}</span><span class="s">${esc(D.complexes[i].d)} · ${D.complexes[i].y}년 · 3년 거래 ${D.complexes[i].cnt}건</span></span></button>`).join("");
+    $("#jsugg").innerHTML = r.map(i => `<button class="item" data-pick="${i}"><span class="main"><span class="t">${esc(D.complexes[i].n)}</span><span class="s">${D.complexes[i].g} ${esc(D.complexes[i].d)} · ${D.complexes[i].y}년 · 3년 거래 ${D.complexes[i].cnt}건</span></span></button>`).join("");
     $("#jsugg").querySelectorAll("[data-pick]").forEach(el => el.onclick = () => {
       J.ci = +el.dataset.pick; J.area = null; saveJ(); renderJudge();
     });
@@ -485,7 +507,7 @@ function renderJudgeBody() {
   $("#jbody").innerHTML = `
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="flex:1;min-width:0"><div style="font-weight:750;font-size:18px">${esc(c.n)}</div><div class="small muted">${esc(c.d)} · ${c.y}년</div></div>
+        <div style="flex:1;min-width:0"><div style="font-weight:750;font-size:18px">${esc(c.n)}</div><div class="small muted">${c.g} ${esc(c.d)} · ${c.y}년</div></div>
         <button class="star" id="jstar" aria-pressed="${isFav(ci)}" aria-label="관심 단지에 추가">${isFav(ci) ? ICON.star : ICON.starO}</button>
       </div>
       <div class="field" role="group" aria-labelledby="lbArea"><label id="lbArea">전용면적</label><div class="chips">${gs.map(g => `<button class="chip" aria-pressed="${Math.abs(g.area - J.area) < 0.01}" data-area="${g.area}">${Math.round(g.area)}㎡ <span class="py">· ${Math.round(g.area / PY_EXCL)}평</span></button>`).join("")}</div></div>
@@ -537,7 +559,7 @@ function renderResult() {
         <div><div class="l">최근 ${g.months}개월 범위</div><div class="v num">${(cmin / 10000).toFixed(1)}~${(cmax / 10000).toFixed(1)}억</div></div>
         <div><div class="l">비교 거래</div><div class="v num">${g.comps.length}건</div></div>
       </div>
-      <div class="basis"><b>기준가 근거</b> · 최근 ${g.months}개월 같은 평형 ${g.comps.length}건을 장안구 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값<br>${baseNote(g)}${fl != null && fl <= D.rules.low ? `<br><b>참고</b> · ${D.rules.low}층 이하 저층은 원래 시세보다 싸게 거래되는 편이에요` : ""}</div>
+      <div class="basis"><b>기준가 근거</b> · 최근 ${g.months}개월 같은 평형 ${g.comps.length}건을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값<br>${baseNote(g)}${fl != null && fl <= D.rules.low ? `<br><b>참고</b> · ${D.rules.low}층 이하 저층은 원래 시세보다 싸게 거래되는 편이에요` : ""}</div>
     </div>` + recent;
 }
 
@@ -545,20 +567,21 @@ function renderResult() {
 let CX = { ci: null, q: "", area: null };
 function renderCxList() {
   const q = CX.q;
-  const list = q ? searchCx(q) : D.complexes.map((c, i) => i).sort((a, b) => D.complexes[b].cnt - D.complexes[a].cnt);
+  const list = (q ? searchCx(q) : D.complexes.map((c, i) => i).sort((a, b) => D.complexes[b].cnt - D.complexes[a].cnt)).filter(inReg);
   $("#v-cx").innerHTML = `
-    <div class="search">${ICON.search}<input id="cq" type="search" enterkeyhint="search" aria-label="단지·동 이름 검색" placeholder="단지·동 이름 검색" autocomplete="off" value="${esc(q)}"></div>
+    ${regionChips()}<div class="search">${ICON.search}<input id="cq" type="search" enterkeyhint="search" aria-label="단지·동·구 이름 검색" placeholder="단지·동·구 이름 검색" autocomplete="off" value="${esc(q)}"></div>
     <div class="card list" id="clist">${list.length ? list.map(i => {
       const c = D.complexes[i];
       return `<button class="item" data-cx="${i}">
         <span class="main"><span class="t">${esc(c.n)}${isFav(i) ? ' <span style="color:#E5A500" aria-label="관심 단지">★</span>' : ""}</span>
-          <span class="s">${esc(c.d)} · ${c.y}년 · 3년 거래 ${c.cnt}건</span></span>
+          <span class="s">${short(c.g)} ${esc(c.d)} · ${c.y}년 · 3년 거래 ${c.cnt}건</span></span>
         <span class="r">${c.nv ? `<span class="p num">${eok2(c.nv.min)}~</span><span class="s">매물 ${c.nv.cnt}건</span>` : '<span class="s">매물 정보 없음</span>'}</span>
         ${ICON.chev}</button>`;
     }).join("") : empty("검색 결과가 없어요.")}</div>`;
   const inp = $("#cq");
   inp.oninput = () => { CX.q = inp.value; const pos = inp.selectionStart; renderCxList(); const n = $("#cq"); n.focus(); n.setSelectionRange(pos, pos); };
   bindItems("#v-cx");
+  bindRegions("#v-cx", renderCxList);
 }
 function renderCxDetail() {
   const ci = CX.ci, c = D.complexes[ci];
@@ -582,7 +605,7 @@ function renderCxDetail() {
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px">
         <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:22px;letter-spacing:-.025em">${esc(c.n)}</div>
-          <div class="small muted">${esc(c.d)} · ${c.y}년 · 3년 거래 ${c.cnt}건</div></div>
+          <div class="small muted">${c.g} ${esc(c.d)} · ${c.y}년 · 3년 거래 ${c.cnt}건</div></div>
         <button class="star" id="cstar" aria-pressed="${isFav(ci)}" aria-label="관심 단지에 추가">${isFav(ci) ? ICON.star : ICON.starO}</button>
       </div>
     </div>
@@ -632,7 +655,7 @@ function renderFav() {
     return `<button class="item" data-cx="${i}">
       ${c.nv && c.nv.grade ? badge(c.nv.grade) : ""}
       <span class="main"><span class="t">${esc(c.n)}</span>
-        <span class="s">${gs.slice(0, 3).map(g => `${Math.round(g.area)}㎡ ${eok(g.base)}`).join(" · ") || esc(c.d)}</span></span>
+        <span class="s">${gs.slice(0, 3).map(g => `${Math.round(g.area)}㎡ ${eok(g.base)}`).join(" · ") || (c.g + " " + esc(c.d))}</span></span>
       <span class="r">${c.nv ? `<span class="p num">${eok2(c.nv.min)}~</span><span class="s">매물 ${c.nv.cnt}건${c.nv.chg7 ? ` (${c.nv.chg7 > 0 ? "+" : ""}${c.nv.chg7})` : ""}</span>` : ""}</span>
       ${ICON.chev}</button>`;
   }).join("")}</div><div class="note">숫자는 평형별 실거래 기준가, 오른쪽은 네이버 최저호가와 매물 수예요.</div>`
@@ -654,7 +677,7 @@ function go(tab, detail = false, push = true) {
   if (tab === "cx" && !detail) CX.ci = null;
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + tab));
   document.querySelectorAll(".tabbar button").forEach(b => b.dataset.tab === tab ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
-  const titles = { home: "장안구 급매", judge: "매물 판정", cx: "단지", fav: "관심 단지" };
+  const titles = { home: "수원 급매", judge: "매물 판정", cx: "단지", fav: "관심 단지" };
   $("#title").textContent = tab === "cx" && CX.ci != null ? "단지 정보" : titles[tab];
   $("#top").classList.toggle("has-back", tab === "cx" && CX.ci != null);
   ({ home: renderHome, judge: renderJudge, fav: renderFav, cx: () => CX.ci != null ? renderCxDetail() : renderCxList() })[tab]();
@@ -681,6 +704,7 @@ fetch("data/app.json", { cache: "no-cache" }).then(r => r.json()).then(data => {
   $("#updated").textContent = D.updated.slice(5).replace("-", "/") + " 기준";
   $("#loading").remove();
   loadJ();
+  const sr = store.get("region", ALL); REG = D.regions.includes(sr) ? sr : ALL;
   const [tab, ci] = (location.hash.slice(1) || "home").split("/");
   if (tab === "cx" && ci != null && D.complexes[+ci]) CX.ci = +ci;
   const t = ["home", "judge", "cx", "fav"].includes(tab) ? tab : "home";
