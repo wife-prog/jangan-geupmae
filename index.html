@@ -759,7 +759,7 @@ fetch("data/app.json", { cache: "no-cache" }).then(r => r.json()).then(data => {
   TODAY = new Date(D.updated + "T00:00:00");
   BY = {};
   for (const [c, a, f, p, d, dir] of D.trades) (BY[c] ||= []).push({ a, f, p, d, dt: toDate(d), dir });
-  $("#updated").textContent = D.updated.slice(5).replace("-", "/") + " 기준";
+  $("#updated").textContent = D.updated.slice(2).replace(/-/g, "/") + " 기준";   // 예: 26/10/10 기준
   $("#loading").remove();
   loadJ();
   const sr = store.get("region", ALL); REG = D.regions.includes(sr) ? sr : ALL;
