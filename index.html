@@ -423,7 +423,7 @@ function renderHome() {
       <button class="item" data-cx="${i}"${c.nv.barea ? ` data-area="${c.nv.barea}"` : ""}>
         ${badge(c.nv.grade)}
         <span class="main"><span class="t">${gtag(i)}${cxName(i)}</span>
-          <span class="s">${esc(c.d)} · ${c.nv.barea ? "가장 작은 평형" : esc(c.nv.sig)}${/하락|증가/.test(c.nv.sig) ? " · " + esc(c.nv.sig.split(", ").filter(x => /하락|증가/.test(x)).join(", ")) : ""}</span></span>
+          <span class="s">${esc(c.d)}${/하락|증가/.test(c.nv.sig) ? " · " + esc(c.nv.sig.split(", ").filter(x => /하락|증가/.test(x)).join(", ")) : ""}</span></span>
         <span class="r"><span class="p num">${eok2(c.nv.min)}</span>
           <span class="s ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? `${Math.round(c.nv.barea)}㎡ 기준 ${pct(c.nv.gap, true)}` : "매물 " + c.nv.cnt + "건"}</span></span>
         ${ICON.chev}
