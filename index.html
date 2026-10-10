@@ -80,7 +80,7 @@ a { color: var(--brand); text-decoration: none; }
 /* 카드 · 섹션 */
 .card { background: var(--card); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px; margin: 12px 0;
   border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
-.sec-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 28px 2px 4px; }
+.sec-title { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 8px; margin: 28px 2px 4px; }
 .sec-title h2 { font-size: 18px; font-weight: 750; margin: 0; letter-spacing: -0.02em; }
 .sec-title span { font-size: 12.5px; color: var(--muted); }
 .note { font-size: 12.5px; color: var(--muted); margin: 8px 4px; line-height: 1.55; }
@@ -236,7 +236,7 @@ ul.ins li { margin: 5px 0; }
 .sumgrid .v { font-size: 17px; font-weight: 750; margin-top: 1px; }
 .sumgrid .d { font-size: 12px; color: var(--ink-2); }
 .rank { margin-top: 16px; }
-.rank h3 { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+.rank h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 14px; font-weight: 700; margin: 0 0 4px; }
 .rank h3 svg { width: 16px; height: 16px; }
 .rank h3 .sub { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--muted); }
 .rank .row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 6px 4px; border: 0;
@@ -251,6 +251,25 @@ ul.ins li { margin: 5px 0; }
 .legend .badge { min-width: 20px; height: 20px; font-size: 11.5px; padding: 0 5px; margin-right: 2px; }
 .legend span { display: inline-flex; align-items: center; white-space: nowrap; }
 .legend .def { flex-basis: 100%; font-size: 12px; color: var(--muted); }
+/* 급매 등급 개수: 등급 단위로만 줄바꿈 (숫자가 잘리지 않게) */
+.kpi .d.grades { white-space: normal; overflow: visible; display: flex; flex-wrap: wrap; gap: 0 4px; font-weight: 650; letter-spacing: -0.02em; }
+.kpi .d.grades span { white-space: nowrap; }
+.kpi .d.grades .gA { color: var(--gA); } .kpi .d.grades .gB { color: var(--gB); } .kpi .d.grades .gC { color: var(--gC); }
+@media (max-width: 389px) { .kpi { padding: 12px 9px; } .kpi .d.grades { font-size: 11.5px; gap: 0 3px; } }
+/* 범례: 칸 폭에 맞춰 설명 글자를 줄임 (한 줄 유지) */
+.legend { container-type: inline-size; flex-wrap: nowrap; }
+.legend .lg-short, .legend .lg-min { display: none; }
+@container (max-width: 300px) { .legend .lg-long { display: none; } .legend .lg-short { display: inline-flex; } }
+@container (max-width: 250px) { .legend .lg-short { display: none; } .legend .lg-min { display: inline-flex; } }
+/* 아주 작은 화면 (폭 360px 미만) */
+.sumnote { container-type: inline-size; }
+.sumnote .sn-short { display: none; }
+@container (max-width: 300px) { .sumnote .sn-long { display: none; } .sumnote .sn-short { display: inline; } }
+@media (max-width: 359px) {
+  .sumnote { font-size: 11.5px; letter-spacing: -0.03em; }
+  .stat3 .l { font-size: 11px; letter-spacing: -0.03em; }
+  .kpi { padding: 10px; } .kpi .v { font-size: 18px; }
+}
 </style>
 </head>
 <body>
@@ -384,7 +403,7 @@ function searchCx(q) {
 // ---------------- 공용 조각 ----------------
 const EMPTY_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5M8.5 11h5"/></svg>';
 const empty = msg => `<div class="empty">${EMPTY_IC}${msg}</div>`;
-const legend = () => `<div class="legend" aria-label="급매 등급 기준"><span>같은 평형 6개월 시세보다</span>${
+const legend = () => `<div class="legend" aria-label="급매 등급 기준"><span class="lg-long">같은 평형 6개월 시세보다</span><span class="lg-short">6개월 시세보다</span><span class="lg-min">시세보다</span>${
   D.rules.grades.map(([g, th]) => `<span>${badge(g)}${Math.round(th * 100)}%↓</span>`).join("")}</div>`;
 const badge = g => `<span class="badge b${g || "N"}" aria-label="${g ? g + "등급" : "등급 없음"}">${g || "–"}</span>`;
 const cxName = i => esc(D.complexes[i].nv && D.complexes[i].nv.name.length < D.complexes[i].n.length + 6 ? D.complexes[i].nv.name.replace(/\(.*?\)/, "") : D.complexes[i].n);
@@ -442,7 +461,7 @@ function summaryHtml() {
     </div>
     ${rank("많이 오른 단지", IC.up, "var(--up)", sm.up, v => pct(v, true))}
     ${rank("내린 단지", IC.down, "var(--down)", sm.down, v => pct(v, true))}
-    <div class="infobox sumnote"><span class="ics"><span style="color:var(--up)">${IC.up}</span><span style="color:var(--down)">${IC.down}</span></span><span>같은 평형 실거래 중앙가 · 최근 3개월 vs 직전 3개월</span></div>
+    <div class="infobox sumnote"><span class="ics"><span style="color:var(--up)">${IC.up}</span><span style="color:var(--down)">${IC.down}</span></span><span class="sn-long">같은 평형 실거래 중앙가 · 최근 3개월 vs 직전 3개월</span><span class="sn-short">같은 평형 중앙가 · 최근 3개월 vs 직전 3개월</span></div>
     ${rank("급매가 자주 나오는 단지", IC.freq, "var(--brand)", sm.freq, v => "급매 " + v, "최근 12개월 · 거래 10건 이상")}
 `;
 }
@@ -463,7 +482,7 @@ function renderHome() {
     </div>
     <div class="kpis">
       <div class="kpi"><div class="l">3개월 거래</div><div class="v num">${k.r3.toLocaleString()}건</div><div class="d">직전 ${k.p3.toLocaleString()}건</div></div>
-      <div class="kpi"><div class="l">60일 급매</div><div class="v num">${tot}건</div><div class="d">A${k.A} · B${k.B} · C${k.C}</div></div>
+      <div class="kpi"><div class="l">60일 급매</div><div class="v num">${tot}건</div><div class="d grades" aria-label="A등급 ${k.A}건, B등급 ${k.B}건, C등급 ${k.C}건"><span class="gA">A${k.A}</span><span class="gB">B${k.B}</span><span class="gC">C${k.C}</span></div></div>
       <div class="kpi"><div class="l">네이버 매물</div><div class="v num">${k.listings != null ? k.listings.toLocaleString() + "건" : "-"}</div><div class="d">매매 합계</div></div>
     </div>
 
@@ -494,7 +513,7 @@ function renderHome() {
 
     <div class="sec-title"><h2>오늘의 요약</h2></div>
     <div class="card">${summaryHtml()}</div>
-    <div class="note">자료: 국토교통부 실거래가, 네이버 부동산 · ${esc(D.updated)} 기준</div>`;
+    <div class="note">자료: 국토부 실거래가 · 네이버 부동산</div>`;
   bindItems("#v-home");
   bindRegions("#v-home", renderHome);
   document.querySelectorAll("#v-home [data-more]").forEach(b => b.onclick = () => {
@@ -631,7 +650,7 @@ function renderCxList() {
       const c = D.complexes[i];
       return `<button class="item" data-cx="${i}">
         <span class="main"><span class="t">${esc(c.n)}${isFav(i) ? ' <span style="color:#E5A500" aria-label="관심 단지">★</span>' : ""}</span>
-          <span class="s">${short(c.g)} ${esc(c.d)} · ${c.y}년 · 3년 거래 ${c.cnt}건</span></span>
+          <span class="s">${short(c.g)} ${esc(c.d)} · ${c.y}년</span></span>
         <span class="r">${c.nv ? `<span class="p num">${eok2(c.nv.min)}~</span><span class="s">매물 ${c.nv.cnt}건</span>` : '<span class="s">매물 정보 없음</span>'}</span>
         ${ICON.chev}</button>`;
     }).join("") : empty("검색 결과가 없어요.")}</div>`;
@@ -677,7 +696,7 @@ function renderCxDetail() {
         <div><div class="l">최근 ${g.months || 12}개월 거래</div><div class="v num">${g.comps.length}건</div></div>
       </div>
       <div class="chart" style="margin-top:14px;height:220px"><canvas id="cTr" role="img" aria-label="이 평형의 최근 3년 실거래 가격"></canvas></div>
-      <div class="note">점 = 실거래 (직거래는 흐리게) · 점선 = 현재 기준가(시점 보정)<br>중앙가 6개월 변화 = 최근 6개월 거래 중앙가와 그 전 6개월(6~12개월 전) 중앙가 비교. 양쪽 모두 ${MIN_CHG}건 이상일 때만 표시</div>
+      <div class="note">점 = 실거래 · 점선 = 현재 기준가<br>6개월 변화 = 최근 6개월 vs 그 전 6개월 중앙가 (각 ${MIN_CHG}건 이상)</div>
       ${g.base ? `<div class="basis">${baseNote(g)}</div>` : ""}
     </div>
     <div class="sec-title"><h2>최근 거래 · 전용 ${Math.round(g.area)}㎡</h2><span>최근 ${Math.min(12, g.rows.length)}건 · 3년 전체 ${g.rows.length}건</span></div>
@@ -713,10 +732,10 @@ function renderFav() {
     return `<button class="item" data-cx="${i}">
       ${c.nv && c.nv.grade ? badge(c.nv.grade) : ""}
       <span class="main"><span class="t">${esc(c.n)}</span>
-        <span class="s">${gs.slice(0, 3).map(g => `${Math.round(g.area)}㎡ ${eok(g.base)}`).join(" · ") || (c.g + " " + esc(c.d))}</span></span>
+        <span class="s">${gs.slice(0, 2).map(g => `${Math.round(g.area)}㎡ ${eok(g.base)}`).join(" · ") || (c.g + " " + esc(c.d))}</span></span>
       <span class="r">${c.nv ? `<span class="p num">${eok2(c.nv.min)}~</span><span class="s">매물 ${c.nv.cnt}건${c.nv.chg7 ? ` (${c.nv.chg7 > 0 ? "+" : ""}${c.nv.chg7})` : ""}</span>` : ""}</span>
       ${ICON.chev}</button>`;
-  }).join("")}</div><div class="note">숫자는 평형별 실거래 기준가, 오른쪽은 네이버 최저호가와 매물 수예요.</div>`
+  }).join("")}</div><div class="note">왼쪽 평형별 기준가 · 오른쪽 네이버 최저호가</div>`
     : `<div style="padding-top:48px">${empty("아직 관심 단지가 없어요.<br>단지 화면에서 별(☆)을 눌러 추가하세요.")}</div>`;
   bindItems("#v-fav");
 }
