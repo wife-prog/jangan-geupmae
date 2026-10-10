@@ -271,6 +271,15 @@ ul.ins li { margin: 5px 0; }
   .stat3 .l { font-size: 11px; letter-spacing: -0.03em; }
   .kpi { padding: 10px; } .kpi .v { font-size: 18px; }
 }
+/* 홈 목록: 아파트 이름은 자르지 않고 최대 두 줄, 구 이름표는 둘째 줄 */
+#v-home .card.list .item { gap: 10px; align-items: center; }
+#v-home .card.list .item .t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35; }
+#v-home .card.list .item .s .gtag { font-size: 11px; padding: 0 5px; margin-right: 5px; vertical-align: 1px; }
+#v-home .card.list .item .r { padding-left: 4px; }
+#v-home .card.list .item .chev { margin-left: -4px; }
+#v-home .card.list .item .s .tag { margin-left: 4px; padding: 0 4px; }
+@media (max-width: 389px) { #v-home .card.list .item .s { white-space: normal; } }
+@media (max-width: 389px) { #v-home .card.list .item .t { -webkit-line-clamp: 3; } }
 </style>
 </head>
 <body>
@@ -491,8 +500,8 @@ function renderHome() {
     <div class="card list">${sig.length ? sig.slice(0, OPEN.sig ? 999 : TOP_N).map(({ c, i }) => `
       <button class="item" data-cx="${i}"${c.nv.barea ? ` data-area="${c.nv.barea}"` : ""}>
         ${badge(c.nv.grade)}
-        <span class="main"><span class="t">${gtag(i)}${cxName(i)}</span>
-          <span class="s">${esc(c.d)}${/하락|증가/.test(c.nv.sig) ? " · " + esc(c.nv.sig.split(", ").filter(x => /하락|증가/.test(x)).join(", ")) : ""}</span></span>
+        <span class="main"><span class="t">${cxName(i)}</span>
+          <span class="s">${gtag(i)}${esc(c.d)}${/하락|증가/.test(c.nv.sig) ? " · " + esc(c.nv.sig.split(", ").filter(x => /하락|증가/.test(x)).join(", ")) : ""}</span></span>
         <span class="r"><span class="p num">${eok2(c.nv.min)}</span>
           <span class="s ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? `${Math.round(c.nv.barea)}㎡ 기준 ${pct(c.nv.gap, true)}` : "매물 " + c.nv.cnt + "건"}</span></span>
         ${ICON.chev}
@@ -503,9 +512,10 @@ function renderHome() {
     <div class="card list">${bars.length ? bars.slice(0, OPEN.bar ? 999 : TOP_N).map(b => `
       <button class="item" data-cx="${b.c}" data-area="${b.area}">
         ${badge(b.g)}
-        <span class="main"><span class="t">${gtag(b.c)}${esc(D.complexes[b.c]?.n ?? "")}</span>
-          <span class="s">${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${b.dt.slice(5).replace("-", "/")}${b.note ? " · " + esc(b.note) : ""}</span></span>
+        <span class="main"><span class="t">${esc(D.complexes[b.c]?.n ?? "")}</span>
+          <span class="s">${gtag(b.c)}${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${+b.dt.slice(5, 7)}/${+b.dt.slice(8, 10)}${/저층/.test(b.note || "") ? '<span class="tag">저층</span>' : ""}</span></span>
         <span class="r"><span class="p num">${eok2(b.p)}</span><span class="s down num">${pct(-b.disc)}</span></span>
+        ${ICON.chev}
       </button>`).join("") + moreBtn("bar", bars.length) : empty("최근 60일 급매 거래가 없어요.")}</div>
     ${legend()}
 
