@@ -372,7 +372,7 @@ function nvBox(i, compact) {
       <div style="font-weight:700;font-size:16px">${nv.cnt}건 <span class="muted" style="font-weight:500">·</span> ${eok2(nv.min)} ~ ${eok2(nv.max)}</div>
       ${compact ? "" : gap}
       ${nv.chg7 != null ? `<div class="small muted">7일 전보다 매물 ${nv.chg7 > 0 ? "+" : ""}${nv.chg7}건</div>` : ""}
-    </div><a class="btn" href="${link}" target="_blank" rel="noopener">매물 보기 ${ICON.ext}</a></div>${compact ? "" : `<div class="infobox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>네이버 최저호가 1개 기준 (보통 가장 작은 평형)</span></div>`}`;
+    </div><a class="btn" href="${link}" target="_blank" rel="noopener">매물 보기 ${ICON.ext}</a></div>`;
 }
 function tradeRow(r) {
   return `<tr><td>${ymd(r.d)} <span class="muted">· ${r.f != null ? r.f + "층" : "-"}</span>${r.dir ? '<span class="tag">직거래</span>' : ""}</td><td class="num">${eok2(r.p)}</td></tr>`;
@@ -428,7 +428,7 @@ function renderHome() {
           <span class="s ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? `${Math.round(c.nv.barea)}㎡ 기준 ${pct(c.nv.gap, true)}` : "매물 " + c.nv.cnt + "건"}</span></span>
         ${ICON.chev}
       </button>`).join("") + moreBtn("sig", sig.length) : empty("오늘은 눈에 띄는 호가 신호가 없어요.")}</div>
-    <div class="note">단지 최저 호가인 평형 기준·다른 평형의 급매는 안잡혀요</div>
+    <div class="infobox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>네이버 최저호가 1개 기준 (보통 가장 작은 평형)</span></div>
 
     <div class="sec-title"><h2>최근 60일 급매 거래</h2><span>실제로 팔린 가격</span></div>
     <div class="card list">${bars.length ? bars.slice(0, OPEN.bar ? 999 : TOP_N).map(b => `
