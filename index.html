@@ -363,11 +363,12 @@ function nvBox(i, compact) {
   const nv = D.complexes[i].nv;
   if (!nv) return `<div class="small muted">네이버 매물 정보가 연결되지 않은 단지예요.</div>`;
   const link = `https://fin.land.naver.com/complexes/${nv.no}?tradeTypes=A1`;
-  const gap = nv.gap != null ? `<div class="small">최저호가는 전용 ${Math.round(nv.barea)}㎡ 기준가 ${eok2(nv.base)}보다 <b class="${nv.gap < 0 ? "down" : "up"}">${pct(Math.abs(nv.gap))} ${nv.gap < 0 ? "낮아요" : "높아요"}</b></div>` : "";
+  const gap = nv.gap != null ? `<div class="small">최저호가는 <b>가장 작은 평형(전용 ${Math.round(nv.barea)}㎡)</b> 기준가 ${eok2(nv.base)}보다 <b class="${nv.gap < 0 ? "down" : "up"}">${pct(Math.abs(nv.gap))} ${nv.gap < 0 ? "낮아요" : "높아요"}</b></div>` : "";
   return `<div class="nvbox"><div class="main">
       <div class="small muted">네이버 매매 매물 · ${esc(D.naverDate || "")}</div>
       <div style="font-weight:700;font-size:16px">${nv.cnt}건 <span class="muted" style="font-weight:500">·</span> ${eok2(nv.min)} ~ ${eok2(nv.max)}</div>
       ${compact ? "" : gap}
+      ${compact ? "" : `<div class="small muted">네이버는 단지 전체에서 가장 싼 매물 1개만 알려줘요. 다른 평형 매물은 '매물 보기'에서 확인하세요.</div>`}
       ${nv.chg7 != null ? `<div class="small muted">7일 전보다 매물 ${nv.chg7 > 0 ? "+" : ""}${nv.chg7}건</div>` : ""}
     </div><a class="btn" href="${link}" target="_blank" rel="noopener">매물 보기 ${ICON.ext}</a></div>`;
 }
@@ -420,12 +421,12 @@ function renderHome() {
       <button class="item" data-cx="${i}"${c.nv.barea ? ` data-area="${c.nv.barea}"` : ""}>
         ${badge(c.nv.grade)}
         <span class="main"><span class="t">${gtag(i)}${cxName(i)}</span>
-          <span class="s">${esc(c.d)} · ${esc(c.nv.sig)}</span></span>
+          <span class="s">${esc(c.d)} · ${c.nv.barea ? "가장 작은 평형" : esc(c.nv.sig)}${/하락|증가/.test(c.nv.sig) ? " · " + esc(c.nv.sig.split(", ").filter(x => /하락|증가/.test(x)).join(", ")) : ""}</span></span>
         <span class="r"><span class="p num">${eok2(c.nv.min)}</span>
-          <span class="s ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? "기준가 " + pct(c.nv.gap, true) : "매물 " + c.nv.cnt + "건"}</span></span>
+          <span class="s ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? `${Math.round(c.nv.barea)}㎡ 기준 ${pct(c.nv.gap, true)}` : "매물 " + c.nv.cnt + "건"}</span></span>
         ${ICON.chev}
       </button>`).join("") + moreBtn("sig", sig.length) : empty("오늘은 눈에 띄는 호가 신호가 없어요.")}</div>
-    <div class="note">최저호가가 그 단지 가장 작은 평형의 실거래 기준가보다 7% 이상 낮으면 표시해요. 호가는 실제 거래가가 아니니 매물을 꼭 확인하세요.</div>
+    <div class="note">네이버는 단지 전체에서 <b>가장 싼 매물 1개</b>의 가격만 알려줘요. 이 매물은 보통 그 단지의 <b>가장 작은 평형</b>이라, 가장 작은 평형의 실거래 기준가보다 7% 이상 싸면 표시해요. <b>다른 평형(예: 84㎡)의 급매는 여기 잡히지 않아요</b> — 찾는 평형은 '매물 판정'에서 확인하세요. 호가는 실제 거래가가 아니니 매물을 꼭 확인하세요.</div>
 
     <div class="sec-title"><h2>최근 60일 급매 거래</h2><span>실제로 팔린 가격</span></div>
     <div class="card list">${bars.length ? bars.slice(0, OPEN.bar ? 999 : TOP_N).map(b => `
