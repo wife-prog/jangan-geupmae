@@ -558,8 +558,14 @@ function drawHomeCharts() {
   const pending = i => i >= m.length - 2;   // 최근 2개월은 신고가 덜 들어와 집계 중
   const vo = chartBase(v => v + "건");
   vo.plugins.tooltip.callbacks.label = ctx => ` ${ctx.parsed.y.toLocaleString()}건${pending(ctx.dataIndex) ? " (신고 집계 중)" : ""}`;
+  vo.interaction = { mode: "index", intersect: false, axis: "x" };   // 그 달 세로줄 어디를 눌러도 표시
+  // 맨 위 = 가장 많은 달의 약 1.3배를 딱 떨어지는 수로 (예: 314건 → 500, 1,889건 → 2,500)
+  const target = Math.max(...m.map(r => r.cnt), 10) * 1.3;
+  const steps = [0, 1, 2, 3, 4].flatMap(k => [1, 2, 2.5, 5].map(f => f * 10 ** k));
+  const step = steps.find(st => Math.ceil(target / st) <= 6);           // 눈금 4~6칸, 고른 간격
+  vo.scales.y.beginAtZero = true; vo.scales.y.max = Math.ceil(target / step) * step; vo.scales.y.ticks.stepSize = step; vo.scales.y.ticks.maxTicksLimit = 8;
   charts.vol = new Chart($("#cVol"), { type: "bar", data: { labels, datasets: [{ data: m.map(r => r.cnt),
-    backgroundColor: m.map((r, i) => pending(i) ? c + "55" : c), borderRadius: 4, maxBarThickness: 14 }] }, options: vo });
+    backgroundColor: m.map((r, i) => pending(i) ? c + "55" : c), borderRadius: 4, maxBarThickness: 14, minBarLength: 6 }] }, options: vo });
   const idx = indexSeries();
   charts.idx = new Chart($("#cIdx"), { type: "line",
     data: { labels: idx.map(r => r.m.slice(2).replace("-", ".")), datasets: [{ data: idx.map(r => r.v), borderColor: on, borderWidth: 2.2,
