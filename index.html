@@ -106,6 +106,7 @@ a { color: var(--brand); text-decoration: none; }
   padding: 0 8px; border-radius: 8px; font-size: 13px; font-weight: 800; flex-shrink: 0; }
 .bA { color: var(--gA); background: var(--gA-bg); } .bB { color: var(--gB); background: var(--gB-bg); }
 .bC { color: var(--gC); background: var(--gC-bg); } .bN { color: var(--ok); background: var(--ok-bg); }
+.bHigh { color: var(--up); background: var(--ok-bg); }
 
 /* 리스트 (버튼) */
 .list { padding: 4px 6px; }
@@ -614,14 +615,18 @@ function renderResult() {
   if (!g.base) { el.innerHTML = `<div class="card verdict"><div class="big bN">?</div><div class="msg">기준가를 정할 수 없어요</div>
       <div class="why">이 평형은 최근 12개월 거래가 ${D.rules.min}건이 안 돼요.</div></div>` + recent; return; }
   const diff = price / g.base - 1, grade = gradeOf(-diff);
-  const msg = grade ? `${grade}등급 급매 수준이에요` : diff < 0 ? "시세보다 조금 싸요" : diff < 0.03 ? "시세 수준이에요" : "시세보다 비싸요";
-  const why = diff < 0 ? `기준가 ${eok2(g.base)}보다 <b>${pct(-diff)}</b> 낮아요` : `기준가 ${eok2(g.base)}보다 <b>${pct(diff)}</b> 높아요`;
+  // 급매가 아닐 때: 3% 넘게 싸면 ↓, ±3% 이내면 ≈(시세 수준), 3% 넘게 비싸면 ↑
+  const band = grade ? "g" : diff <= -0.03 ? "cheap" : diff < 0.03 ? "same" : "high";
+  const msg = { g: `${grade}등급 급매 수준이에요`, cheap: "시세보다 조금 싸요", same: "시세 수준이에요", high: "시세보다 비싸요" }[band];
+  const mark = { g: grade, cheap: "↓", same: "≈", high: "↑" }[band];
+  const why = Math.abs(diff) < 0.005 ? `기준가 ${eok2(g.base)}와 거의 같아요`
+    : diff < 0 ? `기준가 ${eok2(g.base)}보다 <b>${pct(-diff)}</b> 낮아요` : `기준가 ${eok2(g.base)}보다 <b>${pct(diff)}</b> 높아요`;
   const ps = g.comps.map(r => r.p), lo = Math.min(...ps, price), hi = Math.max(...ps, price);
   const pad = (hi - lo) * 0.06 || 1000, L = lo - pad, H = hi + pad, X = v => ((v - L) / (H - L) * 100).toFixed(1) + "%";
   const cmin = Math.min(...ps), cmax = Math.max(...ps);
   el.innerHTML = `
     <div class="card verdict" aria-live="polite">
-      <div class="big b${grade || "N"}" aria-hidden="true">${grade || (diff < 0 ? "↓" : "=")}</div>
+      <div class="big ${band === "g" ? "b" + grade : band === "high" ? "bHigh" : "bN"}" aria-hidden="true">${mark}</div>
       <div class="msg">${msg}</div>
       <div class="why">${why}</div>
       <div class="range">
