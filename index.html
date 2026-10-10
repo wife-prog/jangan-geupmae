@@ -48,6 +48,7 @@
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
 body { font-family: "Pretendard Variable", Pretendard, -apple-system, "Malgun Gothic", sans-serif;
   font-size: 16px; line-height: 1.5; letter-spacing: -0.01em; -webkit-font-smoothing: antialiased;
+  word-break: keep-all; overflow-wrap: anywhere;   /* 한글은 띄어쓰기 단위로 줄바꿈 (너무 긴 단어만 예외)*/
   padding-bottom: calc(var(--tab) + env(safe-area-inset-bottom) + 8px); }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
