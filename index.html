@@ -585,7 +585,7 @@ function renderResult() {
   const bad = J.price.trim() && !price, hint = $("#jhint"), pin = $("#jpr");
   if (hint) { hint.classList.toggle("err", !!bad); hint.textContent = bad ? "가격을 이해하지 못했어요. 예: 3.5억, 3억5천, 35000" : "숫자만 넣으면 억 단위로 봐요 (3.5 → 3.5억)"; }
   if (pin) pin.setAttribute("aria-invalid", bad ? "true" : "false");
-  const recent = `<div class="sec-title"><h2>최근 거래 · 전용 ${Math.round(g.area)}㎡</h2><span>${g.rows.length}건</span></div>
+  const recent = `<div class="sec-title"><h2>최근 거래 · 전용 ${Math.round(g.area)}㎡</h2><span>최근 ${Math.min(6, g.rows.length)}건 · 3년 전체 ${g.rows.length}건</span></div>
     <div class="card"><table class="tr">${g.rows.slice(0, 6).map(tradeRow).join("")}</table></div>
     <div class="card">${nvBox(ci)}</div>`;
   if (!price) { el.innerHTML = `<div class="card verdict"><div class="why">가격을 넣으면 바로 판정해요.</div>
@@ -678,6 +678,7 @@ function renderCxDetail() {
       <div class="note">점 = 실거래 (직거래는 흐리게) · 점선 = 현재 기준가(시점 보정)<br>중앙가 6개월 변화 = 최근 6개월 거래 중앙가와 그 전 6개월(6~12개월 전) 중앙가 비교. 양쪽 모두 ${MIN_CHG}건 이상일 때만 표시</div>
       ${g.base ? `<div class="basis">${baseNote(g)}</div>` : ""}
     </div>
+    <div class="sec-title"><h2>최근 거래 · 전용 ${Math.round(g.area)}㎡</h2><span>최근 ${Math.min(12, g.rows.length)}건 · 3년 전체 ${g.rows.length}건</span></div>
     <div class="card"><table class="tr">${g.rows.slice(0, 12).map(tradeRow).join("")}</table></div>
     <button class="btn solid" id="toJudge">이 단지 매물 판정하기</button>`;
   $("#cstar").onclick = () => { toggleFav(ci); renderCxDetail(); };
