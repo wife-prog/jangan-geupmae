@@ -471,8 +471,8 @@ function summaryHtml() {
       <div><div class="l">오른 단지 / 내린 단지</div><div class="v num"><span class="up">${sm.nUp}</span> / <span class="down">${sm.nDown}</span>곳</div><div class="d">같은 평형 비교</div></div>
       <div><div class="l">해제(취소) 비율</div><div class="v num">${k.cancel != null ? pct(k.cancel) : "-"}</div><div class="d">최근 3개월</div></div>
     </div>
-    ${rank("많이 오른 단지", IC.up, "var(--up)", sm.up, v => pct(v, true))}
-    ${rank("내린 단지", IC.down, "var(--down)", sm.down, v => pct(v, true))}
+    ${rank("가장 많이 오른 단지", IC.up, "var(--up)", sm.up, v => pct(v, true))}
+    ${rank("가장 많이 내린 단지", IC.down, "var(--down)", sm.down, v => pct(v, true))}
     <div class="infobox sumnote"><span class="ics"><span style="color:var(--up)">${IC.up}</span><span style="color:var(--down)">${IC.down}</span></span><span class="sn-long">같은 평형 실거래 중앙가 · 최근 3개월 vs 직전 3개월</span><span class="sn-short">같은 평형 중앙가 · 최근 3개월 vs 직전 3개월</span></div>
     ${rank("급매가 자주 나오는 단지", IC.freq, "var(--brand)", sm.freq, v => "급매 " + v, "최근 12개월 · 거래 10건 이상")}
 `;
