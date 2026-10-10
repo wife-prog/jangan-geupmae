@@ -273,13 +273,13 @@ ul.ins li { margin: 5px 0; }
 }
 /* 홈 목록: 아파트 이름은 자르지 않고 최대 두 줄, 구 이름표는 둘째 줄 */
 #v-home .card.list .item { gap: 10px; align-items: center; }
-#v-home .card.list .item .t { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35; }
+#v-home .card.list .item .t { letter-spacing: -0.02em; }
 #v-home .card.list .item .s .gtag { font-size: 11px; padding: 0 5px; margin-right: 5px; vertical-align: 1px; }
 #v-home .card.list .item .r { padding-left: 4px; }
 #v-home .card.list .item .chev { margin-left: -4px; }
 #v-home .card.list .item .s .tag { margin-left: 4px; padding: 0 4px; }
-@media (max-width: 389px) { #v-home .card.list .item .s { white-space: normal; } }
-@media (max-width: 389px) { #v-home .card.list .item .t { -webkit-line-clamp: 3; } }
+@media (max-width: 389px) { #v-home .card.list .item .s { font-size: 12.5px; letter-spacing: -0.02em; } #v-home .card.list .item .s .gtag { margin-right: 4px; } }
+
 </style>
 </head>
 <body>
@@ -416,6 +416,7 @@ const empty = msg => `<div class="empty">${EMPTY_IC}${msg}</div>`;
 const legend = () => `<div class="legend" aria-label="급매 등급 기준"><span class="lg-long">같은 평형 6개월 시세보다</span><span class="lg-short">6개월 시세보다</span><span class="lg-min">시세보다</span>${
   D.rules.grades.map(([g, th]) => `<span>${badge(g)}${Math.round(th * 100)}%↓</span>`).join("")}</div>`;
 const badge = g => `<span class="badge b${g || "N"}" aria-label="${g ? g + "등급" : "등급 없음"}">${g || "–"}</span>`;
+const listName = n => String(n).replace(/\(.*?\)/g, "").replace(/아파트$/, "").trim() || String(n);
 const cxName = i => esc(D.complexes[i].nv && D.complexes[i].nv.name.length < D.complexes[i].n.length + 6 ? D.complexes[i].nv.name.replace(/\(.*?\)/, "") : D.complexes[i].n);
 function nvBox(i, compact) {
   const nv = D.complexes[i].nv;
@@ -500,10 +501,10 @@ function renderHome() {
     <div class="card list">${sig.length ? sig.slice(0, OPEN.sig ? 999 : TOP_N).map(({ c, i }) => `
       <button class="item" data-cx="${i}"${c.nv.barea ? ` data-area="${c.nv.barea}"` : ""}>
         ${badge(c.nv.grade)}
-        <span class="main"><span class="t">${cxName(i)}</span>
-          <span class="s">${gtag(i)}${esc(c.d)}${/하락|증가/.test(c.nv.sig) ? " · " + esc(c.nv.sig.split(", ").filter(x => /하락|증가/.test(x)).join(", ")) : ""}</span></span>
+        <span class="main"><span class="t">${esc(listName(D.complexes[i].nv?.name || D.complexes[i].n))}</span>
+          <span class="s">${gtag(i)}${esc(c.d)}${c.nv.barea ? ` · ${Math.round(c.nv.barea)}㎡ 기준` : ""}${/하락|증가/.test(c.nv.sig) ? " · " + esc(c.nv.sig.split(", ").filter(x => /하락|증가/.test(x)).join(", ")) : ""}</span></span>
         <span class="r"><span class="p num">${eok2(c.nv.min)}</span>
-          <span class="s ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? `${Math.round(c.nv.barea)}㎡ 기준 ${pct(c.nv.gap, true)}` : "매물 " + c.nv.cnt + "건"}</span></span>
+          <span class="s num ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? pct(c.nv.gap, true) : "매물 " + c.nv.cnt + "건"}</span></span>
         ${ICON.chev}
       </button>`).join("") + moreBtn("sig", sig.length) : empty("오늘은 눈에 띄는 호가 신호가 없어요.")}</div>
     <div class="infobox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>네이버 최저호가 1개 기준 (보통 가장 작은 평형)</span></div>
@@ -512,7 +513,7 @@ function renderHome() {
     <div class="card list">${bars.length ? bars.slice(0, OPEN.bar ? 999 : TOP_N).map(b => `
       <button class="item" data-cx="${b.c}" data-area="${b.area}">
         ${badge(b.g)}
-        <span class="main"><span class="t">${esc(D.complexes[b.c]?.n ?? "")}</span>
+        <span class="main"><span class="t">${esc(listName(D.complexes[b.c]?.n ?? ""))}</span>
           <span class="s">${gtag(b.c)}${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${+b.dt.slice(5, 7)}/${+b.dt.slice(8, 10)}${/저층/.test(b.note || "") ? '<span class="tag">저층</span>' : ""}</span></span>
         <span class="r"><span class="p num">${eok2(b.p)}</span><span class="s down num">${pct(-b.disc)}</span></span>
         ${ICON.chev}
