@@ -428,7 +428,7 @@ function renderHome() {
           <span class="s ${c.nv.gap < 0 ? "down" : ""}">${c.nv.gap != null ? `${Math.round(c.nv.barea)}㎡ 기준 ${pct(c.nv.gap, true)}` : "매물 " + c.nv.cnt + "건"}</span></span>
         ${ICON.chev}
       </button>`).join("") + moreBtn("sig", sig.length) : empty("오늘은 눈에 띄는 호가 신호가 없어요.")}</div>
-    <div class="note">단지 최저호가평형 기준, 다른 평형 급매는 안잡혀요</div>
+    <div class="note">단지 최저 호가인 평형 기준·다른 평형의 급매는 안잡혀요</div>
 
     <div class="sec-title"><h2>최근 60일 급매 거래</h2><span>실제로 팔린 가격</span></div>
     <div class="card list">${bars.length ? bars.slice(0, OPEN.bar ? 999 : TOP_N).map(b => `
