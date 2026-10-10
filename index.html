@@ -442,8 +442,9 @@ function summaryHtml() {
     </div>
     ${rank("많이 오른 단지", IC.up, "var(--up)", sm.up, v => pct(v, true))}
     ${rank("내린 단지", IC.down, "var(--down)", sm.down, v => pct(v, true))}
+    <div class="infobox sumnote"><span class="ics"><span style="color:var(--up)">${IC.up}</span><span style="color:var(--down)">${IC.down}</span></span><span>같은 평형 실거래 중앙가 · 최근 3개월 vs 직전 3개월</span></div>
     ${rank("급매가 자주 나오는 단지", IC.freq, "var(--brand)", sm.freq, v => "급매 " + v, "최근 12개월 · 거래 10건 이상")}
-    <div class="infobox sumnote"><span class="ics"><span style="color:var(--up)">${IC.up}</span><span style="color:var(--down)">${IC.down}</span></span><span>같은 평형 실거래 중앙가 · 최근 3개월 vs 직전 3개월</span></div>`;
+`;
 }
 function renderHome() {
   const k = D.kpi[REG];
