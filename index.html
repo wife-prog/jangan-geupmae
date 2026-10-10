@@ -221,9 +221,9 @@ ul.ins li { margin: 5px 0; }
 .more { width: 100%; min-height: 48px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--brand);
   font-weight: 700; font-size: 14.5px; margin-top: 4px; border-radius: 0 0 12px 12px; }
 .more:active { background: var(--soft); }
-.regions { display: flex; gap: 6px; overflow-x: auto; margin: 4px -16px 12px; padding: 2px 16px; scrollbar-width: none; }
-.regions::-webkit-scrollbar { display: none; }
-.regions .chip { min-height: 40px; padding: 0 14px; font-size: 14.5px; flex-shrink: 0; }
+/* 구 선택: 5개 버튼이 화면 폭을 똑같이 나눠 가짐 (옆으로 밀 필요 없음) */
+.regions { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 4px 0 12px; }
+.regions .chip { min-height: 44px; padding: 0 2px; font-size: 15px; white-space: nowrap; }
 .gtag { font-size: 11.5px; font-weight: 700; color: var(--brand); background: var(--brand-soft); border-radius: 6px; padding: 1px 6px; margin-right: 4px; }
 .infobox { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 8px 10px; border-radius: 10px;
   background: var(--soft); color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
@@ -441,7 +441,7 @@ function indexSeries() {   // 선택한 지역 가격지수 (기준월 = 100), �
 }
 function regionChips() {
   return `<div class="regions" role="group" aria-label="지역 선택">${D.regions.map(r =>
-    `<button class="chip" data-reg="${r}" aria-pressed="${r === REG}">${r === ALL ? "수원 전체" : r}</button>`).join("")}</div>`;
+    `<button class="chip" data-reg="${r}" aria-pressed="${r === REG}" aria-label="${r === ALL ? "수원 전체" : r}">${r === ALL ? "전체" : short(r)}</button>`).join("")}</div>`;
 }
 function bindRegions(root, rerender) {
   document.querySelectorAll(root + " [data-reg]").forEach(b => b.onclick = () => {
