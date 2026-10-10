@@ -285,6 +285,9 @@ ul.ins li { margin: 5px 0; }
 #v-home .card.list .item .s .tag { margin-left: 4px; padding: 0 4px; }
 @media (max-width: 389px) { #v-home .card.list .item .s { font-size: 12.5px; letter-spacing: -0.02em; } #v-home .card.list .item .s .gtag { margin-right: 4px; } }
 
+.infobox.scope { margin-top: 14px; }
+.infobox.scope b { color: var(--ink); font-weight: 700; }
+.empty small { display: inline-block; margin-top: 8px; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -530,7 +533,8 @@ function renderHome() {
 
     <div class="sec-title"><h2>오늘의 요약</h2></div>
     <div class="card">${summaryHtml()}</div>
-    <div class="note">자료: 국토부 실거래가 · 네이버 부동산</div>`;
+    <div class="infobox scope"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/></svg>
+      <span><b>아파트 매매만 대상</b> · 오피스텔·빌라·분양권·전월세 제외<br><span class="muted">자료: 국토부 실거래가 · 네이버 부동산</span></span></div>`;
   bindItems("#v-home");
   bindRegions("#v-home", renderHome);
   document.querySelectorAll("#v-home [data-more]").forEach(b => b.onclick = () => {
@@ -579,7 +583,7 @@ function renderJudge() {
   const ci = J.ci;
   $("#v-judge").innerHTML = `
     <div class="search">${ICON.search}<input id="jq" type="search" enterkeyhint="search" aria-label="단지 이름 검색" placeholder="단지 이름 검색 (예: 삼호진덕)" autocomplete="off" value="${ci != null ? esc(D.complexes[ci].n) : ""}"><div class="sugg" id="jsugg" aria-label="검색 결과"></div></div>
-    <div id="jbody">${ci == null ? empty("단지를 고르고 면적과 가격을 넣으면<br>최근 실거래 기준가와 비교해서 급매인지 알려줘요.") : ""}</div>`;
+    <div id="jbody">${ci == null ? empty("단지를 고르고 면적과 가격을 넣으면<br>최근 실거래 기준가와 비교해서 급매인지 알려줘요.<br><small>수원시 아파트만 검색돼요 (오피스텔·빌라 제외)</small>") : ""}</div>`;
   const inp = $("#jq");
   inp.oninput = () => {
     const r = searchCx(inp.value);
