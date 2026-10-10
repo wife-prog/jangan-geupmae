@@ -242,6 +242,10 @@ ul.ins li { margin: 5px 0; }
 .rank .no { width: 20px; color: var(--muted); font-weight: 700; font-size: 13px; text-align: center; flex-shrink: 0; }
 .rank .nm { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rank .vv { font-weight: 750; flex-shrink: 0; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 8px; padding: 8px 10px;
+  border-radius: 10px; background: var(--soft); font-size: 12.5px; color: var(--ink-2); }
+.legend .badge { min-width: 22px; height: 20px; font-size: 11.5px; padding: 0 6px; margin-right: 3px; }
+.legend span { display: inline-flex; align-items: center; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -375,6 +379,8 @@ function searchCx(q) {
 // ---------------- 공용 조각 ----------------
 const EMPTY_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5M8.5 11h5"/></svg>';
 const empty = msg => `<div class="empty">${EMPTY_IC}${msg}</div>`;
+const legend = () => `<div class="legend" aria-label="급매 등급 기준"><span>기준가보다 싸게</span>${
+  D.rules.grades.map(([g, th]) => `<span>${badge(g)}${Math.round(th * 100)}%+</span>`).join("")}</div>`;
 const badge = g => `<span class="badge b${g || "N"}" aria-label="${g ? g + "등급" : "등급 없음"}">${g || "–"}</span>`;
 const cxName = i => esc(D.complexes[i].nv && D.complexes[i].nv.name.length < D.complexes[i].n.length + 6 ? D.complexes[i].nv.name.replace(/\(.*?\)/, "") : D.complexes[i].n);
 function nvBox(i, compact) {
@@ -432,7 +438,7 @@ function summaryHtml() {
     ${rank("많이 오른 단지", IC.up, "var(--up)", sm.up, v => pct(v, true))}
     ${rank("내린 단지", IC.down, "var(--down)", sm.down, v => pct(v, true))}
     ${rank("급매가 자주 나오는 단지", IC.freq, "var(--ink-2)", sm.freq, v => "급매 " + v)}
-    <div class="note" style="margin:10px 0 0">최근 3개월 vs 직전 3개월 · 같은 평형끼리 비교</div>`;
+    <div class="note" style="margin:10px 0 0">같은 평형 실거래 중앙가 · 최근 3개월 vs 직전 3개월</div>`;
 }
 function renderHome() {
   const k = D.kpi[REG];
@@ -475,6 +481,7 @@ function renderHome() {
           <span class="s">${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${b.dt.slice(5).replace("-", "/")}${b.note ? " · " + esc(b.note) : ""}</span></span>
         <span class="r"><span class="p num">${eok2(b.p)}</span><span class="s down num">${pct(-b.disc)}</span></span>
       </button>`).join("") + moreBtn("bar", bars.length) : empty("최근 60일 급매 거래가 없어요.")}</div>
+    ${legend()}
 
     <div class="sec-title"><h2>월별 거래량</h2><span>해제 거래 제외</span></div>
     <div class="card"><div class="chart"><canvas id="cVol" role="img" aria-label="월별 아파트 거래량"></canvas></div>
@@ -599,6 +606,7 @@ function renderResult() {
         <div><div class="l">최근 ${g.months}개월 범위</div><div class="v num">${(cmin / 10000).toFixed(1)}~${(cmax / 10000).toFixed(1)}억</div></div>
         <div><div class="l">비교 거래</div><div class="v num">${g.comps.length}건</div></div>
       </div>
+      ${legend()}
       <div class="basis"><b>기준가 근거</b> · 최근 ${g.months}개월 같은 평형 ${g.comps.length}건을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값<br>${baseNote(g)}${fl != null && fl <= (D.complexes[ci].low ?? D.rules.low) ? `<br><b>참고</b> · 이 단지는 ${D.complexes[ci].low ?? D.rules.low}층 이하가 저층이에요. 저층은 원래 시세보다 싸게 거래되는 편이에요` : ""}</div>
     </div>` + recent;
 }
