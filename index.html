@@ -256,11 +256,12 @@ ul.ins li { margin: 5px 0; }
 .legend span { display: inline-flex; align-items: center; white-space: nowrap; }
 .legend .def { flex-basis: 100%; font-size: 12px; color: var(--muted); }
 /* 급매 등급 개수: 등급 단위로만 줄바꿈 (숫자가 잘리지 않게) */
-.kpi .d.grades { white-space: normal; overflow: visible; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 5px; font-weight: 650; letter-spacing: -0.03em; font-size: 11.5px; }
-.kpi .d.grades span { white-space: nowrap; }
+.kpi .d.grades { white-space: normal; overflow: visible; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; font-weight: 700; font-size: 11.5px; letter-spacing: -0.03em; color: var(--ink); }
+.kpi .d.grades > span { white-space: nowrap; }
+.kpi .d.grades i { font-style: normal; font-weight: 750; margin-right: 1px; }
 .kpi .d.grades .gA { color: var(--gA); } .kpi .d.grades .gB { color: var(--gB); } .kpi .d.grades .gC { color: var(--gC); }
-@media (max-width: 389px) { .kpi { padding: 12px 8px; } .kpi .d.grades { font-size: 11px; gap: 0 5px; } }
-@media (max-width: 359px) { .kpi .d.grades { font-size: 10.5px; gap: 0 3px; } }
+@media (max-width: 419px) { .kpi { padding: 12px 8px; } .kpi .d.grades { font-size: 11px; gap: 0 5px; } }
+@media (max-width: 359px) { .kpi .d.grades { font-size: 10.5px; gap: 0 4px; } }
 /* 범례: 칸 폭에 맞춰 설명 글자를 줄임 (한 줄 유지) */
 .legend { container-type: inline-size; flex-wrap: nowrap; }
 .legend .lg-short, .legend .lg-min { display: none; }
@@ -497,7 +498,7 @@ function renderHome() {
     </div>
     <div class="kpis">
       <div class="kpi"><div class="l">3개월 거래</div><div class="v num">${k.r3.toLocaleString()}건</div><div class="d">직전 ${k.p3.toLocaleString()}건</div></div>
-      <div class="kpi"><div class="l">60일 급매</div><div class="v num">${tot}건</div><div class="d grades" aria-label="A등급 ${k.A}건, B등급 ${k.B}건, C등급 ${k.C}건"><span class="gA">A${k.A}</span><span class="gB">B${k.B}</span><span class="gC">C${k.C}</span></div></div>
+      <div class="kpi"><div class="l">60일 급매</div><div class="v num">${tot}건</div><div class="d grades" aria-label="A등급 ${k.A}건, B등급 ${k.B}건, C등급 ${k.C}건"><span><i class="gA">A</i>${k.A}</span><span><i class="gB">B</i>${k.B}</span><span><i class="gC">C</i>${k.C}</span></div></div>
       <div class="kpi"><div class="l">네이버 매물</div><div class="v num">${k.listings != null ? k.listings.toLocaleString() + "건" : "-"}</div><div class="d">매매 합계</div></div>
     </div>
 
