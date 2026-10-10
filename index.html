@@ -227,6 +227,21 @@ ul.ins li { margin: 5px 0; }
 .infobox { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 8px 10px; border-radius: 10px;
   background: var(--soft); color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
 .infobox svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--muted); }
+.sumgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sumgrid > div { background: var(--soft); border-radius: 12px; padding: 10px 12px; }
+.sumgrid .l { font-size: 12px; color: var(--muted); }
+.sumgrid .v { font-size: 17px; font-weight: 750; margin-top: 1px; }
+.sumgrid .d { font-size: 12px; color: var(--ink-2); }
+.rank { margin-top: 16px; }
+.rank h3 { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+.rank h3 svg { width: 16px; height: 16px; }
+.rank .row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 6px 4px; border: 0;
+  background: none; border-top: 1px solid var(--line); text-align: left; border-radius: 0; }
+.rank .row:first-of-type { border-top: 0; }
+.rank .row:active { background: var(--soft); }
+.rank .no { width: 20px; color: var(--muted); font-weight: 700; font-size: 13px; text-align: center; flex-shrink: 0; }
+.rank .nm { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank .vv { font-weight: 750; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -397,6 +412,28 @@ const TOP_N = 5;
 function moreBtn(key, total) {
   return total > TOP_N ? `<button class="more" data-more="${key}" aria-expanded="${OPEN[key]}">${OPEN[key] ? "접기" : `전체 ${total}건 보기`}</button>` : "";
 }
+function summaryHtml() {
+  const k = D.kpi[REG], sm = D.summary[REG];
+  const p3 = k.p3 ? k.r3 / k.p3 - 1 : null;
+  const IC = {
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16l6-6 4 4 6-7"/><path d="M15 7h5v5"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8l6 6 4-4 6 7"/><path d="M15 17h5v-5"/></svg>',
+    freq: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M4.2 7.5l2.6 1.5M17.2 15l2.6 1.5M4.2 16.5l2.6-1.5M17.2 9l2.6-1.5"/><circle cx="12" cy="12" r="3"/></svg>',
+  };
+  const rank = (title, icon, color, list, fmt) => list.length ? `<div class="rank"><h3 style="color:${color}">${icon}${title}</h3>${
+    list.map((x, i) => `<button class="row" ${x.c != null ? `data-cx="${x.c}"` : ""}><span class="no">${i + 1}</span>
+      <span class="nm">${REG === ALL ? `<span class="gtag">${short(x.g)}</span>` : ""}${esc(x.n)}</span><span class="vv num" style="color:${color}">${fmt(x.v)}</span></button>`).join("")}</div>` : "";
+  return `<div class="sumgrid">
+      <div><div class="l">전용 평당가 (3개월)</div><div class="v num">${k.ppy ? Math.round(k.ppy).toLocaleString() + "만원" : "-"}</div><div class="d">${k.ppyChg != null ? "직전 대비 " + pct(k.ppyChg, true) : ""}</div></div>
+      <div><div class="l">거래량 (3개월)</div><div class="v num">${k.r3.toLocaleString()}건</div><div class="d">${p3 != null ? "직전 대비 " + pct(p3, true) : ""}</div></div>
+      <div><div class="l">오른 단지 / 내린 단지</div><div class="v num"><span class="up">${sm.nUp}</span> / <span class="down">${sm.nDown}</span>곳</div><div class="d">같은 평형 비교</div></div>
+      <div><div class="l">해제(취소) 비율</div><div class="v num">${k.cancel != null ? pct(k.cancel) : "-"}</div><div class="d">최근 3개월</div></div>
+    </div>
+    ${rank("많이 오른 단지", IC.up, "var(--up)", sm.up, v => pct(v, true))}
+    ${rank("내린 단지", IC.down, "var(--down)", sm.down, v => pct(v, true))}
+    ${rank("급매가 자주 나오는 단지", IC.freq, "var(--ink-2)", sm.freq, v => "급매 " + v)}
+    <div class="note" style="margin:10px 0 0">최근 3개월 vs 직전 3개월 · 같은 평형끼리 비교</div>`;
+}
 function renderHome() {
   const k = D.kpi[REG];
   const bars = D.bargains.filter(b => inReg(b.c));
@@ -444,7 +481,7 @@ function renderHome() {
       <div class="note">최근 1~2개월은 신고가 덜 들어와 실제보다 적게 보여요.</div></div>
 
     <div class="sec-title"><h2>오늘의 요약</h2></div>
-    <div class="card"><ul class="ins">${D.insights[REG].filter(s => !s.startsWith("  ·")).map(s => `<li>${esc(s)}</li>`).join("")}</ul></div>
+    <div class="card">${summaryHtml()}</div>
     <div class="note">자료: 국토교통부 실거래가, 네이버 부동산 · ${esc(D.updated)} 기준</div>`;
   bindItems("#v-home");
   bindRegions("#v-home", renderHome);
