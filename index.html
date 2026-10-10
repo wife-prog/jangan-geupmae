@@ -484,9 +484,8 @@ function renderHome() {
       </button>`).join("") + moreBtn("bar", bars.length) : empty("최근 60일 급매 거래가 없어요.")}</div>
     ${legend()}
 
-    <div class="sec-title"><h2>월별 거래량</h2><span>해제 거래 제외</span></div>
-    <div class="card"><div class="chart"><canvas id="cVol" role="img" aria-label="월별 아파트 거래량"></canvas></div>
-      <div class="note">최근 1~2개월은 신고가 덜 들어와 실제보다 적게 보여요.</div></div>
+    <div class="sec-title"><h2>월별 거래량</h2><span>연한 막대 = 집계 중</span></div>
+    <div class="card"><div class="chart"><canvas id="cVol" role="img" aria-label="월별 아파트 거래량 (최근 2개월은 집계 중)"></canvas></div></div>
 
     <div class="sec-title"><h2>오늘의 요약</h2></div>
     <div class="card">${summaryHtml()}</div>
@@ -511,7 +510,11 @@ function drawHomeCharts() {
   ["vol", "idx"].forEach(k => charts[k]?.destroy());
   const m = D.monthly[REG], labels = m.map(r => r.m.slice(2).replace("-", "."));
   const c = css("--brand"), on = css("--on-brand");
-  charts.vol = new Chart($("#cVol"), { type: "bar", data: { labels, datasets: [{ data: m.map(r => r.cnt), backgroundColor: c, borderRadius: 4, maxBarThickness: 14 }] }, options: chartBase(v => v + "건") });
+  const pending = i => i >= m.length - 2;   // 최근 2개월은 신고가 덜 들어와 집계 중
+  const vo = chartBase(v => v + "건");
+  vo.plugins.tooltip.callbacks.label = ctx => ` ${ctx.parsed.y.toLocaleString()}건${pending(ctx.dataIndex) ? " (신고 집계 중)" : ""}`;
+  charts.vol = new Chart($("#cVol"), { type: "bar", data: { labels, datasets: [{ data: m.map(r => r.cnt),
+    backgroundColor: m.map((r, i) => pending(i) ? c + "55" : c), borderRadius: 4, maxBarThickness: 14 }] }, options: vo });
   const idx = indexSeries();
   charts.idx = new Chart($("#cIdx"), { type: "line",
     data: { labels: idx.map(r => r.m.slice(2).replace("-", ".")), datasets: [{ data: idx.map(r => r.v), borderColor: on, borderWidth: 2.2,
