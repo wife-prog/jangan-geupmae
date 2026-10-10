@@ -364,7 +364,7 @@ function groups(ci) {
   return out.map(as => {
     const rs = rows.filter(r => as.includes(r.a)).sort((x, y) => y.d - x.d);
     const ar = median(rs.map(r => r.a));
-    return { area: ar, rows: rs, ...base(rs, D.complexes[ci].g) };
+    return { area: ar, rows: rs, ...base(rs, D.complexes[ci].g, D.complexes[ci].ld ?? D.rules.lowDisc) };
   });
 }
 function median(a) { const s = [...a].sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
@@ -376,19 +376,18 @@ function idxOf(gu, ym) {
   return ym < ks[0] ? ix[ks[0]] : 1;
 }
 const ymOf = n => `${String(n).slice(0, 4)}-${String(n).slice(4, 6)}`;
-// 기준가 = 최근 6개월(부족하면 12개월) 거래를 오늘 시세로 환산(시점 보정)한 중앙값
-function base(rows, gu) {
-  for (const m of D.rules.months) {
-    const from = new Date(TODAY); from.setDate(from.getDate() - 30 * m);
-    const w = rows.filter(r => r.dt > from);
-    if (w.length >= D.rules.min) {
-      const f2 = new Date(TODAY); f2.setDate(f2.getDate() - 60);
-      const r2 = rows.filter(r => r.dt > f2);
-      return { base: median(w.map(r => r.p / idxOf(gu, ymOf(r.d)))), raw: median(w.map(r => r.p)), months: m, comps: w,
-               recent2: r2.length >= 3 ? median(r2.map(r => r.p)) : null };
-    }
-  }
-  return { base: null, raw: null, months: null, comps: [], recent2: null };
+// 기준가 = 12개월 안 일반층 최근 5건(부족하면 저층 포함)을 오늘 시세로 환산한 중앙값. 저층 기준가 = 기준가 × (1 + 저층 할인율)
+const daysAgo = n => { const x = new Date(TODAY); x.setDate(x.getDate() - n); return x; };
+function base(rows, gu, ld) {   // rows 는 최신순
+  const rec = rows.filter(r => r.dt > daysAgo(365));
+  let pool = rec.filter(r => !r.low);
+  if (pool.length < D.rules.min) pool = rec;
+  const r2 = rows.filter(r => r.dt > daysAgo(60)), r6 = rows.filter(r => r.dt > daysAgo(180));
+  const extra = { recent2: r2.length >= 3 ? median(r2.map(r => r.p)) : null, r6, r12: rec, ld };
+  if (pool.length < D.rules.min) return { base: null, lowBase: null, raw: null, n: 0, comps: [], ...extra };
+  const sel = pool.slice(0, D.rules.recentN);
+  const b = median(sel.map(r => r.p / idxOf(gu, ymOf(r.d))));
+  return { base: b, lowBase: b * (1 + ld), raw: median(sel.map(r => r.p)), n: sel.length, comps: sel, ...extra };
 }
 const baseNote = g => `보정 전 ${eok2(g.raw)}${g.recent2 ? ` · 최근 2개월 실거래 중앙 ${eok2(g.recent2)}` : ""}`;
 function gradeOf(disc) { for (const [g, th] of D.rules.grades) if (disc >= th) return g; return ""; }
@@ -421,7 +420,7 @@ function searchCx(q) {
 // ---------------- 공용 조각 ----------------
 const EMPTY_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5M8.5 11h5"/></svg>';
 const empty = msg => `<div class="empty">${EMPTY_IC}${msg}</div>`;
-const legend = () => `<div class="legend" aria-label="급매 등급 기준"><span class="lg-long">같은 평형 6개월 시세보다</span><span class="lg-short">6개월 시세보다</span><span class="lg-min">시세보다</span>${
+const legend = () => `<div class="legend" aria-label="급매 등급 기준"><span class="lg-long">같은 평형 최근 시세보다</span><span class="lg-short">최근 시세보다</span><span class="lg-min">시세보다</span>${
   D.rules.grades.map(([g, th]) => `<span>${badge(g)}${Math.round(th * 100)}%↓</span>`).join("")}</div>`;
 const badge = g => `<span class="badge b${g || "N"}" aria-label="${g ? g + "등급" : "등급 없음"}">${g || "–"}</span>`;
 const listName = n => String(n).replace(/\(.*?\)/g, "").replace(/아파트$/, "").trim() || String(n);
@@ -430,7 +429,7 @@ function nvBox(i, compact) {
   const nv = D.complexes[i].nv;
   if (!nv) return `<div class="small muted">네이버 매물 정보가 연결되지 않은 단지예요.</div>`;
   const link = `https://fin.land.naver.com/complexes/${nv.no}?tradeTypes=A1`;
-  const gap = nv.gap != null ? `<div class="small">최저호가는 전용 ${Math.round(nv.barea)}㎡ 기준가 ${eok2(nv.base)}보다 <b class="${nv.gap < 0 ? "down" : "up"}">${pct(Math.abs(nv.gap))} ${nv.gap < 0 ? "낮아요" : "높아요"}</b></div>` : "";
+  const gap = nv.gap != null ? `<div class="small">최저호가는 전용 ${Math.round(nv.barea)}㎡ 저층 기준가 ${eok2(nv.base)}보다 <b class="${nv.gap < 0 ? "down" : "up"}">${pct(Math.abs(nv.gap))} ${nv.gap < 0 ? "낮아요" : "높아요"}</b></div>` : "";
   return `<div class="nvbox"><div class="main">
       <div class="small muted">네이버 매매 매물 · ${esc(D.naverDate || "")}</div>
       <div style="font-weight:700;font-size:16px">${nv.cnt}건 <span class="muted" style="font-weight:500">·</span> ${eok2(nv.min)} ~ ${eok2(nv.max)}</div>
@@ -636,18 +635,21 @@ function renderResult() {
   const recent = `<div class="sec-title"><h2>최근 거래 · 전용 ${Math.round(g.area)}㎡</h2><span>최근 ${Math.min(6, g.rows.length)}건 · 3년 전체 ${g.rows.length}건</span></div>
     <div class="card"><table class="tr">${g.rows.slice(0, 6).map(tradeRow).join("")}</table></div>
     <div class="card">${nvBox(ci)}</div>`;
+  const lowLim = D.complexes[ci].low ?? D.rules.low, isLow = fl != null && fl <= lowLim;
   if (!price) { el.innerHTML = `<div class="card verdict"><div class="why">가격을 넣으면 바로 판정해요.</div>
-      ${g.base ? `<div class="msg num">기준가 ${eok2(g.base)}</div><div class="why">최근 ${g.months}개월 ${g.comps.length}건 · 시점 보정</div><div class="basis">${baseNote(g)}</div>` : ""}</div>` + recent; return; }
+      ${g.base ? `<div class="msg num">기준가 ${eok2(isLow ? g.lowBase : g.base)}</div><div class="why">${isLow ? "저층 기준 · " : ""}같은 평형 최근 ${g.n}건 · 시점 보정</div><div class="basis">${baseNote(g)}</div>` : ""}</div>` + recent; return; }
   if (!g.base) { el.innerHTML = `<div class="card verdict"><div class="big bN">?</div><div class="msg">기준가를 정할 수 없어요</div>
       <div class="why">이 평형은 최근 12개월 거래가 ${D.rules.min}건이 안 돼요.</div></div>` + recent; return; }
-  const diff = price / g.base - 1, grade = gradeOf(-diff);
+  const ref = isLow ? g.lowBase : g.base;   // 저층은 저층 기준가와 비교
+  const diff = price / ref - 1, grade = gradeOf(-diff);
   // 급매가 아닐 때: 3% 넘게 싸면 ↓, ±3% 이내면 ≈(시세 수준), 3% 넘게 비싸면 ↑
   const band = grade ? "g" : diff <= -0.03 ? "cheap" : diff < 0.03 ? "same" : "high";
   const msg = { g: `${grade}등급 급매 수준이에요`, cheap: "시세보다 조금 싸요", same: "시세 수준이에요", high: "시세보다 비싸요" }[band];
   const mark = { g: grade, cheap: "↓", same: "≈", high: "↑" }[band];
-  const why = Math.abs(diff) < 0.005 ? `기준가 ${eok2(g.base)}와 거의 같아요`
-    : diff < 0 ? `기준가 ${eok2(g.base)}보다 <b>${pct(-diff)}</b> 낮아요` : `기준가 ${eok2(g.base)}보다 <b>${pct(diff)}</b> 높아요`;
-  const ps = g.comps.map(r => r.p), lo = Math.min(...ps, price), hi = Math.max(...ps, price);
+  const bl = isLow ? "저층 기준가" : "기준가";
+  const why = Math.abs(diff) < 0.005 ? `${bl} ${eok2(ref)}와 거의 같아요`
+    : diff < 0 ? `${bl} ${eok2(ref)}보다 <b>${pct(-diff)}</b> 낮아요` : `${bl} ${eok2(ref)}보다 <b>${pct(diff)}</b> 높아요`;
+  const ps = g.r12.map(r => r.p), lo = Math.min(...ps, price), hi = Math.max(...ps, price);
   const pad = (hi - lo) * 0.06 || 1000, L = lo - pad, H = hi + pad, X = v => ((v - L) / (H - L) * 100).toFixed(1) + "%";
   const cmin = Math.min(...ps), cmax = Math.max(...ps);
   el.innerHTML = `
@@ -657,16 +659,16 @@ function renderResult() {
       <div class="why">${why}</div>
       <div class="range">
         <div class="fill" style="left:${X(cmin)};right:calc(100% - ${X(cmax)})"></div>
-        <div class="mk base" style="left:${X(g.base)}"><span>기준 ${eok(g.base)}</span></div>
+        <div class="mk base" style="left:${X(ref)}"><span>기준 ${eok(ref)}</span></div>
         <div class="mk you" style="left:${X(price)}"><span>${eok(price)}</span></div>
       </div>
       <div class="stat3">
-        <div><div class="l">기준가</div><div class="v num">${eok2(g.base)}</div></div>
-        <div><div class="l">최근 ${g.months}개월 범위</div><div class="v num">${(cmin / 10000).toFixed(1)}~${(cmax / 10000).toFixed(1)}억</div></div>
-        <div><div class="l">비교 거래</div><div class="v num">${g.comps.length}건</div></div>
+        <div><div class="l">${bl}</div><div class="v num">${eok2(ref)}</div></div>
+        <div><div class="l">최근 12개월 범위</div><div class="v num">${(cmin / 10000).toFixed(1)}~${(cmax / 10000).toFixed(1)}억</div></div>
+        <div><div class="l">비교 거래</div><div class="v num">최근 ${g.n}건</div></div>
       </div>
       ${legend()}
-      <div class="basis"><b>기준가 근거</b> · 최근 ${g.months}개월 같은 평형 ${g.comps.length}건을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값<br>${baseNote(g)}${fl != null && fl <= (D.complexes[ci].low ?? D.rules.low) ? `<br><b>참고</b> · 이 단지는 ${D.complexes[ci].low ?? D.rules.low}층 이하가 저층이에요. 저층은 원래 시세보다 싸게 거래되는 편이에요` : ""}</div>
+      <div class="basis"><b>기준가 근거</b> · 같은 평형 최근 ${g.n}건(12개월 안)을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값 ${eok2(g.base)}<br>${baseNote(g)}${isLow ? `<br><b>저층 보정</b> · 이 단지는 ${lowLim}층 이하가 저층이라, 저층이 평소 싸게 팔리는 만큼(${pct(g.ld, true)}) 낮춘 저층 기준가와 비교했어요` : ""}</div>
     </div>` + recent;
 }
 
@@ -699,15 +701,15 @@ function renderCxDetail() {
     const near = shown.reduce((x, y) => Math.abs(y.area - CX.area) < Math.abs(x.area - CX.area) ? y : x);
     CX.area = Math.abs(near.area - CX.area) <= 3 ? near.area : null;
   }
-  if (CX.area == null) CX.area = [...shown].sort((x, y) => y.comps.length - x.comps.length)[0].area;   // 거래 가장 많은 평형
+  if (CX.area == null) CX.area = [...shown].sort((x, y) => y.r6.length - x.r6.length)[0].area;   // 최근 거래 가장 많은 평형
   const g = shown.find(x => Math.abs(x.area - CX.area) < 0.01);
   const prev = (() => {   // 그 전 6개월 중앙값 (6~12개월 전)
     const a = new Date(TODAY); a.setDate(a.getDate() - 360); const b = new Date(TODAY); b.setDate(b.getDate() - 180);
     const w = g.rows.filter(r => r.dt > a && r.dt <= b); return { n: w.length, med: w.length ? median(w.map(r => r.p)) : null };
   })();
   const MIN_CHG = 5;   // 양쪽 기간 모두 5건 이상일 때만 비교 (적으면 한두 건에 크게 흔들림)
-  const chgOk = g.months === 6 && g.comps.length >= MIN_CHG && prev.n >= MIN_CHG;
-  const chg = chgOk ? g.raw / prev.med - 1 : null;
+  const chgOk = g.r6.length >= MIN_CHG && prev.n >= MIN_CHG;
+  const chg = chgOk ? median(g.r6.map(r => r.p)) / prev.med - 1 : null;
   $("#v-cx").innerHTML = `
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px">
@@ -723,8 +725,8 @@ function renderCxDetail() {
       <div class="stat3">
         <div><div class="l">기준가</div><div class="v num">${eok2(g.base)}</div></div>
         <div><div class="l">중앙가 6개월 변화</div><div class="v num ${chg > 0 ? "up" : chg < 0 ? "down" : ""}">${chgOk ? pct(chg, true) : "거래 적음"}</div>
-          <div class="l">${g.months === 6 ? `${prev.n}건 → ${g.comps.length}건` : "최근 6개월 3건 미만"}</div></div>
-        <div><div class="l">최근 ${g.months || 12}개월 거래</div><div class="v num">${g.comps.length}건</div></div>
+          <div class="l">${prev.n}건 → ${g.r6.length}건</div></div>
+        <div><div class="l">저층 기준가</div><div class="v num">${eok2(g.lowBase)}</div></div>
       </div>
       <div class="chart" style="margin-top:14px;height:220px"><canvas id="cTr" role="img" aria-label="이 평형의 최근 3년 실거래 가격"></canvas></div>
       <div class="note">점 = 실거래 · 점선 = 현재 기준가<br>6개월 변화 = 최근 6개월 vs 그 전 6개월 중앙가 (각 ${MIN_CHG}건 이상)</div>
@@ -808,7 +810,8 @@ fetch("data/app.json", { cache: "no-cache" }).then(r => r.json()).then(data => {
   D = data;
   TODAY = new Date(D.updated + "T00:00:00");
   BY = {};
-  for (const [c, a, f, p, d, dir] of D.trades) (BY[c] ||= []).push({ a, f, p, d, dt: toDate(d), dir });
+  for (const [c, a, f, p, d, dir] of D.trades) (BY[c] ||= []).push({ a, f, p, d, dt: toDate(d), dir,
+    low: f != null && f <= (D.complexes[c].low ?? D.rules.low) });
   $("#updated").textContent = D.updated.slice(2).replace(/-/g, "/") + " 기준";   // 예: 26/10/10 기준
   $("#loading").remove();
   loadJ();
