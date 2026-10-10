@@ -94,7 +94,16 @@ a { color: var(--brand); text-decoration: none; }
 .hero .spark { height: 72px; margin: 8px -6px 0; position: relative; }
 
 /* KPI */
-.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+/* 60일 급매 등급별 건수 띠: 색 박스 + 검정 숫자 */
+.gradestrip { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 10px 14px; border-radius: 14px;
+  background: var(--card); box-shadow: var(--shadow); border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
+.gradestrip .lbl { font-size: 12.5px; color: var(--muted); margin-right: auto; white-space: nowrap; }
+.gradestrip .g { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; margin-left: 10px; }
+.gradestrip .g b { font-size: 15px; font-weight: 750; color: var(--ink); }
+@media (max-width: 389px) { .gradestrip { padding: 10px 12px; } .gradestrip .g { margin-left: 6px; gap: 5px; } }
+@media (max-width: 359px) { .gradestrip { padding: 9px 10px; gap: 4px; } .gradestrip .lbl { font-size: 12px; }
+  .gradestrip .g { margin-left: 3px; gap: 4px; } .gradestrip .g b { font-size: 14px; } }
 .kpi { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); padding: 12px;
   border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); min-width: 0; }
 .kpi .l { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -255,7 +264,7 @@ ul.ins li { margin: 5px 0; }
 .legend span { display: inline-flex; align-items: center; white-space: nowrap; }
 .legend .def { flex-basis: 100%; font-size: 12px; color: var(--muted); }
 /* 급매 등급 개수: 등급 단위로만 줄바꿈 (숫자가 잘리지 않게) */
-.kpi .d.grades { white-space: normal; overflow: visible; display: flex; flex-wrap: wrap; gap: 0 4px; font-weight: 650; letter-spacing: -0.02em; }
+.kpi .d.grades { white-space: normal; overflow: visible; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 4px; font-weight: 650; letter-spacing: -0.02em; }
 .kpi .d.grades span { white-space: nowrap; }
 .kpi .d.grades .gA { color: var(--gA); } .kpi .d.grades .gB { color: var(--gB); } .kpi .d.grades .gC { color: var(--gC); }
 @media (max-width: 389px) { .kpi { padding: 12px 9px; } .kpi .d.grades { font-size: 11.5px; gap: 0 3px; } }
@@ -495,9 +504,11 @@ function renderHome() {
     </div>
     <div class="kpis">
       <div class="kpi"><div class="l">3개월 거래</div><div class="v num">${k.r3.toLocaleString()}건</div><div class="d">직전 ${k.p3.toLocaleString()}건</div></div>
-      <div class="kpi"><div class="l">60일 급매</div><div class="v num">${tot}건</div><div class="d grades" aria-label="A등급 ${k.A}건, B등급 ${k.B}건, C등급 ${k.C}건"><span class="gA">A${k.A}</span><span class="gB">B${k.B}</span><span class="gC">C${k.C}</span></div></div>
+      <div class="kpi"><div class="l">60일 급매</div><div class="v num">${tot}건</div><div class="d">실거래 기준</div></div>
       <div class="kpi"><div class="l">네이버 매물</div><div class="v num">${k.listings != null ? k.listings.toLocaleString() + "건" : "-"}</div><div class="d">매매 합계</div></div>
     </div>
+    <div class="gradestrip" aria-label="60일 급매 등급별 건수"><span class="lbl">60일 급매 등급</span>${
+      [["A", k.A], ["B", k.B], ["C", k.C]].map(([g, n]) => `<span class="g">${badge(g)}<b class="num">${n}</b></span>`).join("")}</div>
 
     <div class="sec-title"><h2>지금 살펴볼 매물</h2><span>네이버 호가 신호 ${sig.length}곳</span></div>
     <div class="card list">${sig.length ? sig.slice(0, OPEN.sig ? 999 : TOP_N).map(({ c, i }) => `
