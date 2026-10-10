@@ -227,6 +227,9 @@ ul.ins li { margin: 5px 0; }
 .infobox { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 8px 10px; border-radius: 10px;
   background: var(--soft); color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
 .infobox svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--muted); }
+.sumnote { margin-top: 14px; align-items: center; font-size: 12px; padding: 8px 9px; gap: 5px; letter-spacing: -0.02em; }
+.sumnote .ics { display: inline-flex; gap: 2px; flex-shrink: 0; }
+.sumnote .ics svg { width: 15px; height: 15px; margin-top: 0; color: inherit; }
 .sumgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sumgrid > div { background: var(--soft); border-radius: 12px; padding: 10px 12px; }
 .sumgrid .l { font-size: 12px; color: var(--muted); }
@@ -438,8 +441,8 @@ function summaryHtml() {
     </div>
     ${rank("많이 오른 단지", IC.up, "var(--up)", sm.up, v => pct(v, true))}
     ${rank("내린 단지", IC.down, "var(--down)", sm.down, v => pct(v, true))}
-    ${rank("급매가 자주 나오는 단지", IC.freq, "var(--ink-2)", sm.freq, v => "급매 " + v)}
-    <div class="note" style="margin:10px 0 0">같은 평형 실거래 중앙가 · 최근 3개월 vs 직전 3개월</div>`;
+    ${rank("급매가 자주 나오는 단지", IC.freq, "var(--brand)", sm.freq, v => "급매 " + v)}
+    <div class="infobox sumnote"><span class="ics"><span style="color:var(--up)">${IC.up}</span><span style="color:var(--down)">${IC.down}</span></span><span>같은 평형 실거래 중앙가 · 최근 3개월 vs 직전 3개월</span></div>`;
 }
 function renderHome() {
   const k = D.kpi[REG];
