@@ -231,6 +231,9 @@ ul.ins li { margin: 5px 0; }
 .infobox { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 8px 10px; border-radius: 10px;
   background: var(--soft); color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
 .infobox svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--muted); }
+.infobox.warn { background: #FEF3C7; color: #78350F; }
+.infobox.warn svg { color: #B45309; }
+@media (prefers-color-scheme: dark) { .infobox.warn { background: #3A2A10; color: #FDE68A; } .infobox.warn svg { color: #FBBF24; } }
 .sumnote { margin-top: 14px; align-items: center; font-size: 12px; padding: 8px 9px; gap: 5px; letter-spacing: -0.02em; }
 .sumnote .ics { display: inline-flex; gap: 2px; flex-shrink: 0; }
 .sumnote .ics svg { width: 15px; height: 15px; margin-top: 0; color: inherit; }
@@ -484,6 +487,16 @@ function summaryHtml() {
     ${rank("급매가 자주 나오는 단지", IC.freq, "var(--brand)", sm.freq, v => "급매 " + v, "최근 12개월 · 거래 10건 이상")}
 `;
 }
+// 하락장 모드·시장지수 미갱신 경고 (gu 를 주면 그 구만, 아니면 지금 고른 지역 기준)
+function marketBanner(gu) {
+  const m = D.market; if (!m) return "";
+  const gus = gu ? [gu] : (REG === ALL ? Object.keys(m.gus || {}) : [REG]);
+  const on = gus.filter(g => m.gus?.[g]?.on);
+  let h = "";
+  if (on.length) h += `<div class="infobox warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8l6 6 4-4 6 7"/></svg><span><b>하락장 주의 · ${on.join(", ")}</b><br>부동산원 주간 시세가 내리는 중이라 기준가가 실제보다 높게 잡혀 급매처럼 보일 수 있어요. 이 구는 텔레그램 급매 알림을 멈췄어요.</span></div>`;
+  if (m.stale) h += `<div class="infobox warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg><span><b>시장지수 미갱신</b> · 부동산원 주간 지수가 14일 넘게 안 들어왔어요 (마지막 ${m.last_week}). 하락장 판단은 마지막 상태로 유지해요.</span></div>`;
+  return h;
+}
 function renderHome() {
   const k = D.kpi[REG];
   const bars = D.bargains.filter(b => inReg(b.c));
@@ -493,7 +506,7 @@ function renderHome() {
     .sort((a, b) => (a.c.nv.gap ?? 0) - (b.c.nv.gap ?? 0));
   const tot = k.A + k.B + k.C;
   const idx = indexSeries(), y1 = idx.length > 12 ? idx[idx.length - 1].v / idx[idx.length - 13].v - 1 : null;
-  $("#v-home").innerHTML = regionChips() + `
+  $("#v-home").innerHTML = regionChips() + marketBanner() + `
     <div class="card hero">
       <div class="l">${REG === ALL ? "수원시" : REG} 아파트 시세 · 최근 3개월</div>
       <div class="v num">${pct(k.lfl, true)}</div>
@@ -523,7 +536,7 @@ function renderHome() {
       <button class="item" data-cx="${b.c}" data-area="${b.area}">
         ${badge(b.g)}
         <span class="main"><span class="t">${esc(listName(D.complexes[b.c]?.n ?? ""))}</span>
-          <span class="s">${gtag(b.c)}${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${+b.dt.slice(5, 7)}/${+b.dt.slice(8, 10)}${/저층/.test(b.note || "") ? '<span class="tag">저층</span>' : ""}${/신뢰도 낮음/.test(b.note || "") ? '<span class="tag">신뢰도 낮음</span>' : ""}</span></span>
+          <span class="s">${gtag(b.c)}${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${+b.dt.slice(5, 7)}/${+b.dt.slice(8, 10)}${/저층/.test(b.note || "") ? '<span class="tag">저층</span>' : ""}${/신뢰도 낮음/.test(b.note || "") ? '<span class="tag">신뢰도 낮음</span>' : ""}${/하락장 주의/.test(b.note || "") ? '<span class="tag">하락장 주의</span>' : ""}</span></span>
         <span class="r"><span class="p num">${eok2(b.p)}</span><span class="s down num">${pct(-b.disc)}</span></span>
         ${ICON.chev}
       </button>`).join("") + moreBtn("bar", bars.length) : empty("최근 60일 급매 거래가 없어요.")}</div>
@@ -665,7 +678,7 @@ function renderResult() {
   const ps = g.r12.map(r => r.p), lo = Math.min(...ps, price), hi = Math.max(...ps, price);
   const pad = (hi - lo) * 0.06 || 1000, L = lo - pad, H = hi + pad, X = v => ((v - L) / (H - L) * 100).toFixed(1) + "%";
   const cmin = Math.min(...ps), cmax = Math.max(...ps);
-  el.innerHTML = `
+  el.innerHTML = marketBanner(D.complexes[ci].g) + `
     <div class="card verdict" aria-live="polite">
       <div class="big ${band === "g" ? "b" + grade : band === "high" ? "bHigh" : "bN"}" aria-hidden="true">${mark}</div>
       <div class="msg">${msg}</div>
