@@ -421,7 +421,7 @@ function searchCx(q) {
 const EMPTY_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5M8.5 11h5"/></svg>';
 const empty = msg => `<div class="empty">${EMPTY_IC}${msg}</div>`;
 const legend = () => `<div class="legend" aria-label="급매 등급 기준"><span class="lg-long">같은 평형 최근 시세보다</span><span class="lg-short">최근 시세보다</span><span class="lg-min">시세보다</span>${
-  D.rules.grades.map(([g, th]) => `<span>${badge(g)}${Math.round(th * 100)}%↓</span>`).join("")}</div>`;
+  D.rules.grades.map(([g, th]) => `<span>${badge(g)}${+(th * 100).toFixed(1)}%↓</span>`).join("")}</div>`;
 const badge = g => `<span class="badge b${g || "N"}" aria-label="${g ? g + "등급" : "등급 없음"}">${g || "–"}</span>`;
 const listName = n => String(n).replace(/\(.*?\)/g, "").replace(/아파트$/, "").trim() || String(n);
 const cxName = i => esc(D.complexes[i].nv && D.complexes[i].nv.name.length < D.complexes[i].n.length + 6 ? D.complexes[i].nv.name.replace(/\(.*?\)/, "") : D.complexes[i].n);
@@ -521,7 +521,7 @@ function renderHome() {
       <button class="item" data-cx="${b.c}" data-area="${b.area}">
         ${badge(b.g)}
         <span class="main"><span class="t">${esc(listName(D.complexes[b.c]?.n ?? ""))}</span>
-          <span class="s">${gtag(b.c)}${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${+b.dt.slice(5, 7)}/${+b.dt.slice(8, 10)}${/저층/.test(b.note || "") ? '<span class="tag">저층</span>' : ""}</span></span>
+          <span class="s">${gtag(b.c)}${Math.round(b.area)}㎡ · ${b.fl != null ? b.fl + "층" : "-"} · ${+b.dt.slice(5, 7)}/${+b.dt.slice(8, 10)}${/저층/.test(b.note || "") ? '<span class="tag">저층</span>' : ""}${/신뢰도 낮음/.test(b.note || "") ? '<span class="tag">신뢰도 낮음</span>' : ""}</span></span>
         <span class="r"><span class="p num">${eok2(b.p)}</span><span class="s down num">${pct(-b.disc)}</span></span>
         ${ICON.chev}
       </button>`).join("") + moreBtn("bar", bars.length) : empty("최근 60일 급매 거래가 없어요.")}</div>
