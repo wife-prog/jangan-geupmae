@@ -390,7 +390,7 @@ const ymOf = n => `${String(n).slice(0, 4)}-${String(n).slice(4, 6)}`;
 const daysAgo = n => { const x = new Date(TODAY); x.setDate(x.getDate() - n); return x; };
 function base(rows, gu, ld) {   // rows 는 최신순
   rows = rows.filter(r => !r.dir);   // 직거래는 기준가에 쓰지 않음
-  const rec = rows.filter(r => r.dt > daysAgo(365));
+  const rec = rows.filter(r => r.dt >= daysAgo(365));   // 365일 전 거래 포함 (report.py 와 같게)
   let pool = rec.filter(r => !r.low);
   if (pool.length < D.rules.min) pool = rec;
   const r2 = rows.filter(r => r.dt > daysAgo(60)), r6 = rows.filter(r => r.dt > daysAgo(180));
@@ -751,7 +751,8 @@ function renderCxDetail() {
   const g = shown.find(x => Math.abs(x.area - CX.area) < 0.01);
   const prev = (() => {   // 그 전 6개월 중앙값 (6~12개월 전)
     const a = new Date(TODAY); a.setDate(a.getDate() - 360); const b = new Date(TODAY); b.setDate(b.getDate() - 180);
-    const w = g.rows.filter(r => r.dt > a && r.dt <= b); return { n: w.length, med: w.length ? median(w.map(r => r.p)) : null };
+    // 최근 6개월(r6)과 같이 직거래 제외
+    const w = g.rows.filter(r => !r.dir && r.dt > a && r.dt <= b); return { n: w.length, med: w.length ? median(w.map(r => r.p)) : null };
   })();
   const MIN_CHG = 5;   // 양쪽 기간 모두 5건 이상일 때만 비교 (적으면 한두 건에 크게 흔들림)
   const chgOk = g.r6.length >= MIN_CHG && prev.n >= MIN_CHG;
