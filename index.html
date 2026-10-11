@@ -231,6 +231,8 @@ ul.ins li { margin: 5px 0; }
 .infobox { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 8px 10px; border-radius: 10px;
   background: var(--soft); color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
 .infobox svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--muted); }
+.jtxt { color: var(--brand); font-weight: 600; }
+.jtxt b { font-weight: 800; }
 .infobox.warn { background: #FEF3C7; color: #78350F; }
 .infobox.warn svg { color: #B45309; }
 @media (prefers-color-scheme: dark) { .infobox.warn { background: #3A2A10; color: #FDE68A; } .infobox.warn svg { color: #FBBF24; } }
@@ -402,7 +404,7 @@ function jeonseOf(ci, area, base) {
   for (const [a, med, n] of js) if (Math.abs(a - area) <= 2 && (!best || Math.abs(a - area) < Math.abs(best[0] - area))) best = [a, med, n];
   return best ? { r: best[1] / base, med: best[1], n: best[2] } : null;
 }
-const jeonseText = j => j ? `전세가율 <b>${Math.round(j.r * 100)}%</b> · 최근 6개월 신규 전세 ${j.n}건 중앙 ${eok2(j.med)} (참고)` : "";
+const jeonseText = j => j ? `<span class="jtxt">전세가율 <b>${Math.round(j.r * 100)}%</b> · 최근 6개월 신규 전세 ${j.n}건 중앙 ${eok2(j.med)} (참고)</span>` : "";
 const baseNote = g => `보정 전 ${eok2(g.raw)}${g.recent2 ? ` · 최근 2개월 실거래 중앙 ${eok2(g.recent2)}` : ""}`;
 function gradeOf(disc) { for (const [g, th] of D.rules.grades) if (disc >= th) return g; return ""; }
 function parsePrice(t) {
@@ -704,7 +706,7 @@ function renderResult() {
         <div><div class="l">비교 거래</div><div class="v num">최근 ${g.n}건</div></div>
       </div>
       ${legend()}
-      <div class="basis"><b>기준가 근거</b> · 같은 평형 최근 ${g.n}건(12개월 안)을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값 ${eok2(g.base)}<br>${baseNote(g)}${isLow ? `<br><b>저층 보정</b> · 이 단지는 ${lowLim}층 이하가 저층이라, 저층이 평소 싸게 팔리는 만큼(${pct(g.ld, true)}) 낮춘 저층 기준가와 비교했어요` : ""}${(() => { const j = jeonseOf(ci, g.area, g.base); return j ? `<br><b>참고</b> · ${jeonseText(j)}` : ""; })()}</div>
+      <div class="basis"><b>기준가 근거</b> · 같은 평형 최근 ${g.n}건(12개월 안)을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값 ${eok2(g.base)}<br>${baseNote(g)}${isLow ? `<br><b>저층 보정</b> · 이 단지는 ${lowLim}층 이하가 저층이라, 저층이 평소 싸게 팔리는 만큼(${pct(g.ld, true)}) 낮춘 저층 기준가와 비교했어요` : ""}${(() => { const j = jeonseOf(ci, g.area, g.base); return j ? `<br>${jeonseText(j)}` : ""; })()}</div>
     </div>` + recent;
 }
 
