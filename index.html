@@ -367,7 +367,7 @@ function groups(ci) {
   for (const a of areas) { if (prev != null && a - prev > D.rules.tol) { out.push(cur); cur = []; } cur.push(a); prev = a; }
   if (cur.length) out.push(cur);
   return out.map(as => {
-    const rs = rows.filter(r => as.includes(r.a)).sort((x, y) => y.d - x.d);
+    const rs = rows.filter(r => as.includes(r.a)).sort((x, y) => y.d - x.d || x.p - y.p);   // 최신순, 같은 날이면 싼 거래 먼저 (report.py 와 같은 규칙)
     const ar = median(rs.map(r => r.a));
     return { area: ar, rows: rs, ...base(rs, D.complexes[ci].g, D.complexes[ci].ld ?? D.rules.lowDisc) };
   });
@@ -450,6 +450,7 @@ function nvBox(i, compact) {
       <div class="small muted">네이버 매매 매물 · ${esc(D.naverDate || "")}</div>
       <div style="font-weight:700;font-size:16px">${nv.cnt}건 <span class="muted" style="font-weight:500">·</span> ${eok2(nv.min)} ~ ${eok2(nv.max)}</div>
       ${compact ? "" : gap}
+      ${!compact && nv.gap != null ? (() => { const sib = D.complexes.filter(c => c.nv && c.nv.no === nv.no); return sib.length > 1 ? `<div class="small muted">네이버는 ${sib.map(c => esc(listName(c.n))).join("·")}를 한 단지로 보여줘서, 이 기준가는 ${sib.length}개 단지 거래를 합쳐 계산했어요 (아래 평형별 시세는 이 단지만)</div>` : ""; })() : ""}
       ${nv.chg7 != null ? `<div class="small muted">7일 전보다 매물 ${nv.chg7 > 0 ? "+" : ""}${nv.chg7}건</div>` : ""}
     </div><a class="btn" href="${link}" target="_blank" rel="noopener">매물 보기 ${ICON.ext}</a></div>`;
 }
