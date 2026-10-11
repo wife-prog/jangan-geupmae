@@ -395,6 +395,14 @@ function base(rows, gu, ld) {   // rows 는 최신순
   const b = median(sel.map(r => r.p / idxOf(gu, ymOf(r.d))));
   return { base: b, lowBase: b * (1 + ld), raw: median(sel.map(r => r.p)), n: sel.length, comps: sel, ...extra };
 }
+// 전세가율(참고): 같은 평형(±2㎡) 최근 6개월 신규 전세 중앙값 ÷ 매매 기준가. 등급에는 안 씀
+function jeonseOf(ci, area, base) {
+  const js = D.complexes[ci]?.js; if (!js || !base) return null;
+  let best = null;
+  for (const [a, med, n] of js) if (Math.abs(a - area) <= 2 && (!best || Math.abs(a - area) < Math.abs(best[0] - area))) best = [a, med, n];
+  return best ? { r: best[1] / base, med: best[1], n: best[2] } : null;
+}
+const jeonseText = j => j ? `전세가율 <b>${Math.round(j.r * 100)}%</b> · 최근 6개월 신규 전세 ${j.n}건 중앙 ${eok2(j.med)} (참고)` : "";
 const baseNote = g => `보정 전 ${eok2(g.raw)}${g.recent2 ? ` · 최근 2개월 실거래 중앙 ${eok2(g.recent2)}` : ""}`;
 function gradeOf(disc) { for (const [g, th] of D.rules.grades) if (disc >= th) return g; return ""; }
 function parsePrice(t) {
@@ -696,7 +704,7 @@ function renderResult() {
         <div><div class="l">비교 거래</div><div class="v num">최근 ${g.n}건</div></div>
       </div>
       ${legend()}
-      <div class="basis"><b>기준가 근거</b> · 같은 평형 최근 ${g.n}건(12개월 안)을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값 ${eok2(g.base)}<br>${baseNote(g)}${isLow ? `<br><b>저층 보정</b> · 이 단지는 ${lowLim}층 이하가 저층이라, 저층이 평소 싸게 팔리는 만큼(${pct(g.ld, true)}) 낮춘 저층 기준가와 비교했어요` : ""}</div>
+      <div class="basis"><b>기준가 근거</b> · 같은 평형 최근 ${g.n}건(12개월 안)을 ${D.complexes[ci].g} 시세 흐름으로 오늘 가격에 맞춰 환산한 중앙값 ${eok2(g.base)}<br>${baseNote(g)}${isLow ? `<br><b>저층 보정</b> · 이 단지는 ${lowLim}층 이하가 저층이라, 저층이 평소 싸게 팔리는 만큼(${pct(g.ld, true)}) 낮춘 저층 기준가와 비교했어요` : ""}${(() => { const j = jeonseOf(ci, g.area, g.base); return j ? `<br><b>참고</b> · ${jeonseText(j)}` : ""; })()}</div>
     </div>` + recent;
 }
 
@@ -756,6 +764,7 @@ function renderCxDetail() {
           <div class="l">${prev.n}건 → ${g.r6.length}건</div></div>
         <div><div class="l">저층 기준가</div><div class="v num">${eok2(g.lowBase)}</div></div>
       </div>
+      ${(() => { const j = jeonseOf(ci, g.area, g.base); return j ? `<div class="note" style="margin-top:10px">${jeonseText(j)}</div>` : ""; })()}
       <div class="chart" style="margin-top:14px;height:220px"><canvas id="cTr" role="img" aria-label="이 평형의 최근 3년 실거래 가격"></canvas></div>
       <div class="note">점 = 실거래 · 점선 = 현재 기준가<br>6개월 변화 = 최근 6개월 vs 그 전 6개월 중앙가 (각 ${MIN_CHG}건 이상)</div>
       ${g.base ? `<div class="basis">${baseNote(g)}</div>` : ""}
