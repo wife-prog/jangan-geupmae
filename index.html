@@ -382,6 +382,9 @@ function idxOf(gu, ym) {
 }
 // 전용면적 표시는 버림 (네이버·분양 타입명과 같게: 59.87㎡ → 59㎡). 계산은 실제 면적으로
 const sqm = a => Math.floor(+a + 1e-6);
+// 평형 묶음(±2㎡) 이름: 타입이 하나면 "59㎡", 82㎡·84㎡ 타입이 한 묶음이면 "82~84㎡"
+const areaLabel = g => { const v = (g.rows || []).map(r => sqm(r.a)); if (!v.length) return sqm(g.area) + "㎡";
+  const lo = Math.min(...v), hi = Math.max(...v); return lo === hi ? `${lo}㎡` : `${lo}~${hi}㎡`; };
 const ymOf = n => `${String(n).slice(0, 4)}-${String(n).slice(4, 6)}`;
 // 기준가 = 12개월 안 일반층 최근 5건(부족하면 저층 포함)을 오늘 시세로 환산한 중앙값. 저층 기준가 = 기준가 × (1 + 저층 할인율)
 const daysAgo = n => { const x = new Date(TODAY); x.setDate(x.getDate() - n); return x; };
@@ -650,7 +653,7 @@ function renderJudgeBody() {
         <div style="flex:1;min-width:0"><div style="font-weight:750;font-size:18px">${esc(c.n)}</div><div class="small muted">${c.g} ${esc(c.d)} · ${c.y}년</div></div>
         <button class="star" id="jstar" aria-pressed="${isFav(ci)}" aria-label="관심 단지에 추가">${isFav(ci) ? ICON.star : ICON.starO}</button>
       </div>
-      <div class="field" role="group" aria-labelledby="lbArea"><label id="lbArea">전용면적</label><div class="chips">${gs.map(g => `<button class="chip" aria-pressed="${Math.abs(g.area - J.area) < 0.01}" data-area="${g.area}">${sqm(g.area)}㎡ <span class="py">· ${Math.round(g.area / PY_EXCL)}평</span></button>`).join("")}</div></div>
+      <div class="field" role="group" aria-labelledby="lbArea"><label id="lbArea">전용면적</label><div class="chips">${gs.map(g => `<button class="chip" aria-pressed="${Math.abs(g.area - J.area) < 0.01}" data-area="${g.area}">${areaLabel(g)} <span class="py">· ${Math.round(g.area / PY_EXCL)}평</span></button>`).join("")}</div></div>
       <div class="row2">
         <div class="field"><label for="jfl">층 (선택)</label><input id="jfl" inputmode="numeric" enterkeyhint="next" placeholder="예: 5" value="${esc(J.floor)}"></div>
         <div class="field"><label for="jpr">가격</label><input id="jpr" inputmode="decimal" enterkeyhint="done" placeholder="예: 3.5억, 3억5천" aria-describedby="jhint" value="${esc(J.price)}"></div>
@@ -671,7 +674,7 @@ function renderResult() {
   const bad = J.price.trim() && !price, hint = $("#jhint"), pin = $("#jpr");
   if (hint) { hint.classList.toggle("err", !!bad); hint.textContent = bad ? "가격을 이해하지 못했어요. 예: 3.5억, 3억5천, 35000" : "숫자만 넣으면 억 단위로 봐요 (3.5 → 3.5억)"; }
   if (pin) pin.setAttribute("aria-invalid", bad ? "true" : "false");
-  const recent = `<div class="sec-title"><h2>최근 거래 · 전용 ${sqm(g.area)}㎡</h2><span>최근 ${Math.min(6, g.rows.length)}건 · 3년 전체 ${g.rows.length}건</span></div>
+  const recent = `<div class="sec-title"><h2>최근 거래 · 전용 ${areaLabel(g)}</h2><span>최근 ${Math.min(6, g.rows.length)}건 · 3년 전체 ${g.rows.length}건</span></div>
     <div class="card"><table class="tr">${g.rows.slice(0, 6).map(tradeRow).join("")}</table></div>
     <div class="card">${nvBox(ci)}</div>`;
   const lowLim = D.complexes[ci].low ?? D.rules.low, isLow = fl != null && fl <= lowLim;
@@ -763,7 +766,7 @@ function renderCxDetail() {
     </div>
     <div class="card">${nvBox(ci)}</div>
     <div class="sec-title"><h2>평형별 시세</h2></div>
-    <div class="chips" role="group" aria-label="평형 선택">${shown.map(x => `<button class="chip" aria-pressed="${Math.abs(x.area - CX.area) < 0.01}" data-area="${x.area}">${sqm(x.area)}㎡ <span class="py">· ${Math.round(x.area / PY_EXCL)}평</span></button>`).join("")}</div>
+    <div class="chips" role="group" aria-label="평형 선택">${shown.map(x => `<button class="chip" aria-pressed="${Math.abs(x.area - CX.area) < 0.01}" data-area="${x.area}">${areaLabel(x)} <span class="py">· ${Math.round(x.area / PY_EXCL)}평</span></button>`).join("")}</div>
     <div class="card">
       <div class="stat3">
         <div><div class="l">기준가</div><div class="v num">${eok2(g.base)}</div></div>
@@ -776,7 +779,7 @@ function renderCxDetail() {
       <div class="note">점 = 실거래 · 점선 = 현재 기준가<br>6개월 변화 = 최근 6개월 vs 그 전 6개월 중앙가 (각 ${MIN_CHG}건 이상)</div>
       ${g.base ? `<div class="basis">${baseNote(g)}</div>` : ""}
     </div>
-    <div class="sec-title"><h2>최근 거래 · 전용 ${sqm(g.area)}㎡</h2><span>최근 ${Math.min(12, g.rows.length)}건 · 3년 전체 ${g.rows.length}건</span></div>
+    <div class="sec-title"><h2>최근 거래 · 전용 ${areaLabel(g)}</h2><span>최근 ${Math.min(12, g.rows.length)}건 · 3년 전체 ${g.rows.length}건</span></div>
     <div class="card"><table class="tr">${g.rows.slice(0, 12).map(tradeRow).join("")}</table></div>
     <button class="btn solid" id="toJudge">이 단지 매물 판정하기</button>`;
   $("#cstar").onclick = () => { toggleFav(ci); renderCxDetail(); };
@@ -809,7 +812,7 @@ function renderFav() {
     return `<button class="item" data-cx="${i}">
       ${c.nv && c.nv.grade ? badge(c.nv.grade) : ""}
       <span class="main"><span class="t">${esc(c.n)}</span>
-        <span class="s">${gs.slice(0, 2).map(g => `${sqm(g.area)}㎡ ${eok(g.base)}`).join(" · ") || (c.g + " " + esc(c.d))}</span></span>
+        <span class="s">${gs.slice(0, 2).map(g => `${areaLabel(g)} ${eok(g.base)}`).join(" · ") || (c.g + " " + esc(c.d))}</span></span>
       <span class="r">${c.nv ? `<span class="p num">${eok2(c.nv.min)}~</span><span class="s">매물 ${c.nv.cnt}건${c.nv.chg7 ? ` (${c.nv.chg7 > 0 ? "+" : ""}${c.nv.chg7})` : ""}</span>` : ""}</span>
       ${ICON.chev}</button>`;
   }).join("")}</div><div class="note">왼쪽 평형별 기준가 · 오른쪽 네이버 최저호가</div>`
